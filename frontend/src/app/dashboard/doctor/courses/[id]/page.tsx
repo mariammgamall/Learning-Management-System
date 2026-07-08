@@ -755,8 +755,8 @@ export default function DoctorCourseWorkspace() {
                   No students registered.
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-beige-200 overflow-hidden shadow-soft">
-                  <table className="w-full text-left text-xs border-collapse">
+                <div className="bg-white rounded-2xl border border-beige-200 overflow-hidden shadow-soft w-full overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                     <thead className="bg-beige-100/50 border-b border-beige-200 font-bold text-text-secondary">
                       <tr>
                         <th className="px-4 py-3">Student Name</th>
@@ -894,8 +894,8 @@ export default function DoctorCourseWorkspace() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-white rounded-2xl border border-beige-200 overflow-hidden shadow-soft">
-                    <table className="w-full text-left text-xs border-collapse">
+                  <div className="bg-white rounded-2xl border border-beige-200 overflow-hidden shadow-soft w-full overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                       <thead className="bg-beige-100/50 border-b border-beige-200 font-bold text-text-secondary">
                         <tr>
                           <th className="px-4 py-3">Student Name</th>
