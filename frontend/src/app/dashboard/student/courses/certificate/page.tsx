@@ -183,13 +183,16 @@ export default function CourseCertificatePage() {
         style={{ height: scale < 1 ? `${565 * scale}px` : 'auto' }}
       >
         <div 
-          className="printable-cert-area relative bg-white border-[16px] border-double border-orange-600/60 p-8 md:p-12 rounded-3xl shadow-premium text-center font-serif text-text-primary print:border-orange-600 print:shadow-none overflow-hidden flex flex-col justify-between"
+          dir="ltr"
+          className="printable-cert-area relative border-[16px] border-double border-orange-600/60 py-6 px-12 rounded-3xl shadow-premium text-center font-serif print:border-orange-600 print:shadow-none overflow-hidden flex flex-col justify-between"
           style={{
             width: '800px',
             height: '565px',
             transform: scale < 1 ? `scale(${scale})` : 'none',
             transformOrigin: 'top center',
             flexShrink: 0,
+            backgroundColor: '#ffffff',
+            color: '#1c1917',
           }}
         >
           
@@ -198,10 +201,10 @@ export default function CourseCertificatePage() {
           <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-orange-600/40" />
           <div className="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-orange-600/40" />
           <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-orange-600/40" />
-
+ 
           {/* Top Logo Shield Crest */}
-          <div className="pt-2">
-            <svg className="w-14 h-14 text-orange-600 mx-auto" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+          <div className="pt-0">
+            <svg className="w-11 h-11 text-orange-600 mx-auto" viewBox="0 0 64 64" fill="none" stroke="currentColor">
               <path d="M12 8 C12 8, 32 4, 32 4 C32 4, 52 8, 52 8 C52 24, 46 44, 32 58 C18 44, 12 24, 12 8 Z" fill="#FFFBEB" strokeWidth="2.5" />
               <path d="M16 11 C16 11, 32 7.5, 32 7.5 C32 7.5, 48 11, 48 11 C48 24, 43 40, 32 52.5 C21 40, 16 24, 16 11 Z" strokeWidth="1" strokeDasharray="2,2" />
               <path d="M24 28 L29 25 L32 28 L35 25 L40 28 L40 36 L32 39 L24 36 Z" fill="#FEF3C7" strokeWidth="1.5" />
@@ -209,70 +212,76 @@ export default function CourseCertificatePage() {
               <polygon points="32,13 34,17 38,17 35,19 36,23 32,21 28,23 29,19 26,17 30,17" fill="currentColor" />
             </svg>
           </div>
-
-          <div className="space-y-4 max-w-2xl mx-auto flex-1 flex flex-col justify-center">
+ 
+          <div className="space-y-2.5 max-w-2xl mx-auto flex-1 flex flex-col justify-center">
             {/* Top Logo / Label */}
-            <div className="space-y-1">
-              <span className="text-[9px] font-sans font-black tracking-widest text-orange-600 uppercase">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-sans font-black tracking-widest uppercase" style={{ color: '#ea580c' }}>
                 Official Academic Credential
               </span>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-neutral-800 tracking-wide mt-1.5">
+              <h1 className="text-2xl font-extrabold tracking-wide mt-1" style={{ color: '#1c1917' }}>
                 Certificate of Completion
               </h1>
             </div>
-
-            <div className="text-[11px] md:text-xs font-sans font-medium text-text-secondary">
+ 
+            <div className="text-[10px] font-sans font-semibold" style={{ color: '#57534e' }}>
               This is proudly awarded to
             </div>
-
+ 
             {/* Student Name */}
-            <div className="py-1 border-b border-beige-200 inline-block px-10 mx-auto">
-              <span className="text-xl md:text-2xl font-black text-neutral-900 tracking-wide">
+            <div className="py-0.5 border-b inline-block px-10 mx-auto" style={{ borderColor: '#e7e5e4' }}>
+              <span className="text-xl font-black tracking-wide" style={{ color: '#0c0a09' }}>
                 {user?.name || 'Mariam Gamal Elsayed Khamiss Yassin'}
               </span>
             </div>
-
-            <div className="text-[10px] md:text-[11px] font-sans font-medium text-text-secondary leading-relaxed max-w-lg mx-auto">
+ 
+            <div className="text-[10px] font-sans font-medium leading-relaxed max-w-lg mx-auto" style={{ color: '#57534e' }}>
               for successfully satisfying all course syllabus guidelines, assignments, and examination benchmarks required to pass the academic curriculum program of:
             </div>
-
+ 
             {/* Course Details */}
             <div className="space-y-1">
-              <h2 className="text-base md:text-lg font-extrabold text-orange-700">
+              <h2 className="text-base font-extrabold" style={{ color: '#c2410c' }}>
                 {course.title}
               </h2>
-              <span className="text-[9px] font-sans font-bold text-text-secondary tracking-wider block">
+              <span className="text-[8px] font-sans font-bold tracking-wider block" style={{ color: '#57534e' }}>
                 COURSE CODE: {course.code}
               </span>
-              <div className="flex justify-center gap-6 text-[9px] font-sans font-bold text-text-secondary tracking-wide mt-2 bg-beige-50/50 py-1.5 px-4 rounded-lg max-w-xs mx-auto border border-beige-200">
+              <div 
+                className="flex justify-center gap-6 text-[8px] font-sans font-bold tracking-wide mt-1.5 py-1 px-4 rounded-lg max-w-xs mx-auto border"
+                style={{ backgroundColor: '#fffdfa', borderColor: '#e7e5e4', color: '#57534e' }}
+              >
                 <div>
-                  <span className="block text-[7px] uppercase text-text-secondary/70">Duration</span>
-                  <span className="text-neutral-800">12 Weeks (Full Semester)</span>
+                  <span className="block text-[6px] uppercase" style={{ color: 'rgba(87, 83, 78, 0.7)' }}>Duration</span>
+                  <span style={{ color: '#1c1917' }}>12 Weeks (Full Semester)</span>
                 </div>
-                <div className="border-r border-beige-200" />
+                <div className="border-r" style={{ borderColor: '#e7e5e4' }} />
                 <div>
-                  <span className="block text-[7px] uppercase text-text-secondary/70">Working Hours</span>
-                  <span className="text-neutral-800">60 Effort Hours</span>
+                  <span className="block text-[6px] uppercase" style={{ color: 'rgba(87, 83, 78, 0.7)' }}>Working Hours</span>
+                  <span style={{ color: '#1c1917' }}>60 Effort Hours</span>
                 </div>
               </div>
             </div>
           </div>
-
+ 
           {/* Signature & Official Stamp Row */}
-          <div className="grid grid-cols-3 gap-4 items-end pt-4 border-t border-beige-100 font-sans text-xs">
+          <div className="grid grid-cols-3 gap-4 items-end pt-2.5 border-t font-sans text-[10px]" style={{ borderColor: '#f5f5f4' }}>
             {/* Signature */}
-            <div className="space-y-1.5 text-left">
-              <div className="font-serif italic text-base text-neutral-800 select-none pb-1 border-b border-beige-200 pl-2">
+            <div className="space-y-1 text-left">
+              <div 
+                className="font-serif italic text-sm select-none pb-0.5 border-b pl-2"
+                style={{ color: '#1c1917', borderColor: '#e7e5e4' }}
+              >
                 Ahmed Hagag
               </div>
-              <span className="text-[8px] font-bold text-text-secondary uppercase tracking-wider block pl-2">
+              <span className="text-[7px] font-bold uppercase tracking-wider block pl-2" style={{ color: '#57534e' }}>
                 Lead Program Instructor
               </span>
             </div>
-
-            {/* Official Stamp - Matches Scalloped Verified Seal from User but in Orange & Stamping LMS */}
-            <div className="flex justify-center select-none pb-1">
-              <svg className="w-20 h-20 text-orange-600 drop-shadow-md rotate-[8deg]" viewBox="0 0 120 120">
+ 
+            {/* Official Stamp */}
+            <div className="flex justify-center select-none pb-0.5">
+              <svg className="w-16 h-16 text-orange-600 drop-shadow-sm rotate-[8deg]" viewBox="0 0 120 120">
                 {/* Scalloped outer background */}
                 <path
                   d={getScallopedPath(60, 60, 56, 36, 4)}
@@ -308,21 +317,27 @@ export default function CourseCertificatePage() {
                 />
               </svg>
             </div>
-
+ 
             {/* Verification Detail */}
-            <div className="space-y-1.5 text-right pr-2">
-              <div className="font-bold text-neutral-800 text-[9px] pb-1 border-b border-beige-200">
+            <div className="space-y-1 text-right pr-2">
+              <div 
+                className="font-bold text-[8.5px] pb-0.5 border-b"
+                style={{ color: '#1c1917', borderColor: '#e7e5e4' }}
+              >
                 {certificateId}
               </div>
-              <span className="text-[8px] font-bold text-text-secondary uppercase tracking-wider block">
+              <span className="text-[7px] font-bold uppercase tracking-wider block" style={{ color: '#57534e' }}>
                 Verification Serial ID
               </span>
             </div>
           </div>
-
+ 
           {/* Verification Footer Disclaimer (Print friendly) */}
-          <div className="flex items-center justify-center gap-1 text-[8px] font-sans font-semibold text-text-secondary/60 pt-2 print:pt-0">
-            <ShieldCheck className="w-3 h-3 text-mint-500" />
+          <div 
+            className="flex items-center justify-center gap-1 text-[8px] font-sans font-semibold pt-1"
+            style={{ color: 'rgba(87, 83, 78, 0.6)' }}
+          >
+            <ShieldCheck className="w-2.5 h-2.5 text-mint-500" />
             <span>Officially verified by the Learning Management System registry board</span>
           </div>
 
