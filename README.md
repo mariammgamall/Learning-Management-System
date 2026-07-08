@@ -6,11 +6,18 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
 
 ---
 
+## 🚀 Live Cloud Deployment
+*   **Single Unified Portal (Frontend):** [https://mariam-lms-portal.vercel.app](https://mariam-lms-portal.vercel.app)
+*   **API Services Server (Backend):** [https://lms-backend-xi-blue.vercel.app](https://lms-backend-xi-blue.vercel.app)
+*   **Database Cloud Instance:** Neon Serverless PostgreSQL Cloud Engine
+
+---
+
 ## 🛠️ Tech Stack & Key Features
 
 ### Backend (`/backend`)
 *   **Runtime & Framework:** Node.js, Express, and TypeScript.
-*   **Database Engine:** Prisma ORM connected out-of-the-box to a **zero-dependency SQLite file-based database** (perfect for direct, instant local running).
+*   **Database Engine:** Prisma ORM supporting both local zero-dependency SQLite databases and live **Neon Serverless PostgreSQL** cloud databases.
 *   **Security & Auth:** Short-lived (15-min) JWT Access Tokens passed via `Bearer` headers + long-lived (7d) secure, `httpOnly` JWT Refresh Tokens set in cookies. Role guards protect private admin, doctor, and TA operations.
 *   **Static Router Collision Bypass:** Route hierarchy is optimized to prevent parameter collision (e.g. `/profile` endpoints resolved ahead of parameter paths like `/:id`).
 *   **File Storage & Avatars:** Local uploads fallback serving files from `/uploads`, fully ready to upload to Cloudinary SDK.
