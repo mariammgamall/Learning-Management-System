@@ -43,7 +43,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Ensure local uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (error) {
+    console.warn('[Server Startup] Warning: Could not create local uploads folder (read-only filesystem):', error);
+  }
 }
 
 // Serve uploaded static files
