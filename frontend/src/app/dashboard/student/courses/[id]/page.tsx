@@ -379,7 +379,7 @@ export default function StudentCourseHub() {
       </div>
 
       {/* 2. Course Section Navigation tabs */}
-      <div className="flex gap-2 border-b border-beige-200 pb-px">
+      <div className="flex gap-2 border-b border-beige-200 pb-px overflow-x-auto whitespace-nowrap scrollbar-none md:flex-wrap md:overflow-x-visible">
         {(() => {
           const tabsList = [
             { id: 'lectures', label: 'Lectures', icon: Video },
@@ -397,7 +397,7 @@ export default function StudentCourseHub() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-5 py-3 border-b-2 text-xs font-bold transition-all ${
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 border-b-2 text-xs font-bold transition-all ${
                   isActive
                     ? 'border-b-mint-500 text-mint-500'
                     : 'border-b-transparent text-text-secondary hover:text-text-primary'

@@ -33,6 +33,7 @@ const getScallopedPath = (cx: number, cy: number, r: number, points: number, dep
 export default function CourseCertificatePage() {
   const { user } = useAuthStore();
   const [courseId, setCourseId] = useState('');
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -42,6 +43,23 @@ export default function CourseCertificatePage() {
         setCourseId(queryId);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        // 32px margin padding on the mobile view wrapper
+        const newScale = (width - 32) / 800;
+        setScale(newScale);
+      } else {
+        setScale(1);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Fetch Course details
@@ -159,9 +177,21 @@ export default function CourseCertificatePage() {
         </button>
       </div>
 
-      {/* Scrollable container to maintain desktop certificate proportions on mobile screens */}
-      <div className="w-full overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 print:overflow-visible print:p-0 print:m-0">
-        <div className="printable-cert-area min-w-[768px] md:min-w-0 relative bg-white border-[16px] border-double border-orange-600/60 p-8 md:p-12 rounded-3xl shadow-premium text-center font-serif text-text-primary print:border-orange-600 print:shadow-none overflow-hidden max-w-4xl mx-auto aspect-[1.414] flex flex-col justify-between">
+      {/* Dynamic scaled container for mobile to fit the exact desktop layout without horizontal scrolling */}
+      <div 
+        className="w-full overflow-hidden flex justify-center my-6 print:my-0 print:overflow-visible"
+        style={{ height: scale < 1 ? `${565 * scale}px` : 'auto' }}
+      >
+        <div 
+          className="printable-cert-area relative bg-white border-[16px] border-double border-orange-600/60 p-8 md:p-12 rounded-3xl shadow-premium text-center font-serif text-text-primary print:border-orange-600 print:shadow-none overflow-hidden flex flex-col justify-between"
+          style={{
+            width: '800px',
+            height: '565px',
+            transform: scale < 1 ? `scale(${scale})` : 'none',
+            transformOrigin: 'top center',
+            flexShrink: 0,
+          }}
+        >
           
           {/* Decorative corner brackets */}
           <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-orange-600/40" />

@@ -438,7 +438,7 @@ export default function TACourseWorkspace() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-beige-200 pb-px">
+      <div className="flex gap-2 border-b border-beige-200 pb-px overflow-x-auto whitespace-nowrap scrollbar-none md:flex-wrap md:overflow-x-visible">
         {[
           { id: 'lectures', label: lang === 'en' ? 'Supplementary Materials' : 'المواد الإضافية', icon: Video },
           { id: 'assignments', label: lang === 'en' ? 'Grading Locker' : 'خزانة التقييم', icon: FileText },
@@ -452,7 +452,7 @@ export default function TACourseWorkspace() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-5 py-3 border-b-2 text-xs font-bold transition-all ${
+              className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 border-b-2 text-xs font-bold transition-all ${
                 isActive
                   ? 'border-b-mint-500 text-mint-500'
                   : 'border-b-transparent text-text-secondary hover:text-text-primary'
