@@ -7,7 +7,7 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
 ---
 
 ## 🚀 Live Cloud Deployment
-*   **Single Unified Portal (Frontend):** [https://mariam-lms-portal.vercel.app](https://mariam-lms-portal.vercel.app)
+*   **Single Unified Portal (Frontend):** [https://mariam-lms-portal.vercel.app](https://mariam-lms-portal-pink.vercel.app)
 *   **API Services Server (Backend):** [https://lms-backend-xi-blue.vercel.app](https://lms-backend-xi-blue.vercel.app)
 *   **Database Cloud Instance:** Neon Serverless PostgreSQL Cloud Engine
 
