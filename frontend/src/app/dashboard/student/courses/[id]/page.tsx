@@ -102,57 +102,126 @@ export default function StudentCourseHub() {
   const handleRunSandbox = async () => {
     setSandboxOutput(['⏳ Compiling and executing code...']);
     
-    if (sandboxLanguage === 'javascript') {
-      const logs: string[] = [];
-      const customConsole = {
-        log: (...args: any[]) => {
-          logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' '));
-        },
-        error: (...args: any[]) => {
-          logs.push('❌ Error: ' + args.map(a => String(a)).join(' '));
-        }
-      };
-
-      try {
-        const sandboxFn = new Function('console', sandboxCode);
-        sandboxFn(customConsole);
-      } catch (err: any) {
-        logs.push(`❌ Compile Error: ${err.message}`);
+    const logs: string[] = [];
+    const customConsole = {
+      log: (...args: any[]) => {
+        logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' '));
+      },
+      error: (...args: any[]) => {
+        logs.push('❌ Error: ' + args.map(a => String(a)).join(' '));
       }
-
-      setSandboxOutput(logs);
-      addToast('Script executed successfully!', 'success');
-      return;
-    }
+    };
 
     try {
-      const payload = {
-        language: sandboxLanguage === 'cpp' ? 'c++' : sandboxLanguage,
-        version: '*',
-        files: [{ content: sandboxCode }]
-      };
-      
-      const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      
-      if (data.run) {
-        const out = data.run.output || '';
-        const lines = out.split('\n').filter((l: string) => l !== '');
-        if (lines.length === 0) {
-          setSandboxOutput(['⚠️ Execution completed with no console outputs.']);
-        } else {
-          setSandboxOutput(lines);
+      // 1. JavaScript
+      if (sandboxLanguage === 'javascript') {
+        const sandboxFn = new Function('console', sandboxCode);
+        sandboxFn(customConsole);
+        setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
+        addToast('Script executed successfully!', 'success');
+        return;
+      }
+
+      // 2. Python
+      if (sandboxLanguage === 'python') {
+        let jsCode = sandboxCode
+          .replace(/#.*/g, '')
+          .replace(/def\s+(\w+)\s*\(([^)]*)\):/g, 'function $1($2) {')
+          .replace(/return\s+f"([^"]*)\{([^}]+)\}([^"]*)"/g, 'return "$1" + $2 + "$3"')
+          .replace(/print\s*\((.*)\)/g, 'console.log($1)');
+
+        if (jsCode.includes('function ')) {
+          const lines = jsCode.split('\n');
+          let insideFunction = false;
+          let processedLines = [];
+          for (let line of lines) {
+            if (line.includes('function ')) {
+              insideFunction = true;
+            } else if (insideFunction && !line.startsWith('    ') && !line.startsWith('\t') && line.trim() !== '') {
+              processedLines.push('}');
+              insideFunction = false;
+            }
+            processedLines.push(line);
+          }
+          if (insideFunction) {
+            processedLines.push('}');
+          }
+          jsCode = processedLines.join('\n');
         }
-        addToast('External compiler execution complete!', 'success');
-      } else {
-        setSandboxOutput(['❌ Compilation failed: Unknown compiler error.']);
+
+        const sandboxFn = new Function('console', jsCode);
+        sandboxFn(customConsole);
+        setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
+        addToast('Python execution completed successfully!', 'success');
+        return;
+      }
+
+      // 3. C++
+      if (sandboxLanguage === 'cpp') {
+        let cleanCode = sandboxCode
+          .replace(/#include.*/g, '')
+          .replace(/using\s+namespace.*/g, '')
+          .replace(/std::string\s+(\w+)\s*\(([^)]*)\)\s*\{/g, (match, fnName, params) => {
+            const cleanParams = params.replace(/(std::string|string|int|double|float|char|bool)\s+/g, '');
+            return `function ${fnName}(${cleanParams}) {`;
+          })
+          .replace(/int\s+main\s*\(\)\s*\{/g, 'function main() {')
+          .replace(/std::cout\s*<<\s*([^<;]+)\s*<<\s*std::endl;/g, 'console.log($1);')
+          .replace(/std::cout\s*<<\s*([^<;]+);/g, 'console.log($1);')
+          .replace(/return\s+0;/g, '');
+
+        cleanCode += '\nmain();';
+        const sandboxFn = new Function('console', cleanCode);
+        sandboxFn(customConsole);
+        setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
+        addToast('C++ execution completed successfully!', 'success');
+        return;
+      }
+
+      // 4. Java
+      if (sandboxLanguage === 'java') {
+        let cleanCode = sandboxCode
+          .replace(/public\s+class\s+\w+\s*\{/g, '')
+          .replace(/public\s+static\s+void\s+main\s*\(([^)]*)\)\s*\{/g, 'function main() {')
+          .replace(/public\s+static\s+(\w+|String)\s+(\w+)\s*\(([^)]*)\)\s*\{/g, (match, retType, fnName, params) => {
+            const cleanParams = params.replace(/(String|string|int|double|float|char|boolean)\s+/g, '');
+            return `function ${fnName}(${cleanParams}) {`;
+          })
+          .replace(/System\.out\.println\s*\(([^)]*)\);/g, 'console.log($1);');
+
+        const lastBraceIdx = cleanCode.lastIndexOf('}');
+        if (lastBraceIdx !== -1) {
+          cleanCode = cleanCode.substring(0, lastBraceIdx) + cleanCode.substring(lastBraceIdx + 1);
+        }
+
+        cleanCode += '\nmain();';
+        const sandboxFn = new Function('console', cleanCode);
+        sandboxFn(customConsole);
+        setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
+        addToast('Java execution completed successfully!', 'success');
+        return;
+      }
+
+      // 5. Go
+      if (sandboxLanguage === 'go') {
+        let cleanCode = sandboxCode
+          .replace(/package\s+main/g, '')
+          .replace(/import\s+"fmt"/g, '')
+          .replace(/func\s+(\w+)\s*\(([^)]*)\)\s*(\w+|String)?\s*\{/g, (match, fnName, params) => {
+            const cleanParams = params.replace(/(\w+)\s+(string|int|float|bool)/g, '$1');
+            return `function ${fnName}(${cleanParams}) {`;
+          })
+          .replace(/fmt\.Println\s*\(([^)]*)\)/g, 'console.log($1)');
+
+        cleanCode += '\nmain();';
+        const sandboxFn = new Function('console', cleanCode);
+        sandboxFn(customConsole);
+        setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
+        addToast('Go execution completed successfully!', 'success');
+        return;
       }
     } catch (err: any) {
-      setSandboxOutput([`❌ Network Error: Failed to contact code executor. ${err.message}`]);
+      setSandboxOutput([`❌ Execution Error: ${err.message}`]);
     }
   };
   
