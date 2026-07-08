@@ -1,0 +1,230 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String           @id @default(uuid())
+  name          String
+  email         String           @unique
+  password      String
+  role          String           // ADMIN, DOCTOR, TA, STUDENT
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  profilePhoto  String?
+  resetToken    String?
+  resetTokenExpires DateTime?
+  
+  // Relations
+  courses       Course[]         @relation("DoctorCourses")
+  enrollments   Enrollment[]
+  teachingJobs  CourseTA[]
+  submissions   Submission[]
+  attempts      QuizAttempt[]
+  notifications Notification[]
+  watched       WatchedLecture[]
+  attendances   Attendance[]
+}
+
+model Course {
+  id                 String              @id @default(uuid())
+  title              String
+  description        String
+  code               String              @unique
+  doctorId           String
+  doctor             User                @relation("DoctorCourses", fields: [doctorId], references: [id])
+  isPublished        Boolean             @default(false)
+  isPaid             Boolean             @default(false)
+  price              Float               @default(0.0)
+  createdAt          DateTime            @default(now())
+
+  // Relations
+  enrollments        Enrollment[]
+  tas                CourseTA[]
+  lectures           Lecture[]
+  assignments        Assignment[]
+  quizzes            Quiz[]
+  attendances        Attendance[]
+  meetings           Meeting[]
+  attendanceSessions AttendanceSession[]
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([studentId, courseId])
+}
+
+model CourseTA {
+  id       String @id @default(uuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId   String
+  ta       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+}
+
+model Lecture {
+  id            String           @id @default(uuid())
+  title         String
+  courseId      String
+  course        Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  weekNumber    Int
+  fileUrl       String
+  fileType      String           // VIDEO, PDF, SLIDES, OTHER
+  allowDownload Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+
+  // Relations
+  watchedBy     WatchedLecture[]
+}
+
+model WatchedLecture {
+  id        String   @id @default(uuid())
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lectureId String
+  lecture   Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  watchedAt DateTime @default(now())
+
+  @@unique([studentId, lectureId])
+}
+
+model Assignment {
+  id          String       @id @default(uuid())
+  title       String
+  description String       // Rich text (HTML)
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  deadline    DateTime
+  maxScore    Int          @default(100)
+  createdAt   DateTime     @default(now())
+  fileUrl     String?
+  
+  // Relations
+  submissions Submission[]
+}
+
+model Submission {
+  id            String     @id @default(uuid())
+  assignmentId  String
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fileUrl       String
+  submittedAt   DateTime   @default(now())
+  isLate        Boolean    @default(false)
+  grade         Float?
+  feedback      String?
+  gradedBy      String?    // User ID of the Doctor/TA who graded
+  isTaGraded    Boolean    @default(false)
+  taGradeReview Boolean    @default(false) // True if doctor approved TA grade
+
+  @@unique([assignmentId, studentId])
+}
+
+model Quiz {
+  id               String        @id @default(uuid())
+  title            String
+  courseId         String
+  course           Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  timeLimit        Int           // in minutes
+  maxAttempts      Int           @default(1)
+  shuffleQuestions Boolean       @default(false)
+  showResultsAfter String        @default("IMMEDIATE") // IMMEDIATE, AFTER_DEADLINE
+  createdAt        DateTime      @default(now())
+  fileUrl          String?
+  
+  // Relations
+  questions        Question[]
+  attempts         QuizAttempt[]
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text          String
+  type          String   // MCQ, TRUE_FALSE, SHORT_ANSWER
+  options       String   // JSON stringified array of options
+  correctAnswer String
+}
+
+model QuizAttempt {
+  id          String    @id @default(uuid())
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers     String    // JSON string of answers map (questionId -> answer)
+  score       Float?
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+  tabSwitches Int       @default(0)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      String
+  status    String
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, studentId, date])
+}
+
+model Meeting {
+  id        String           @id @default(uuid())
+  title     String
+  courseId  String
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  hostId    String
+  hostName  String
+  hostRole  String
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  messages  MeetingMessage[]
+}
+
+model MeetingMessage {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  senderId    String
+  senderName  String
+  senderRole  String
+  message     String
+  createdAt   DateTime @default(now())
+}
+
+model AttendanceSession {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      String
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

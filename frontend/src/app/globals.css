@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@source "../**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  --color-beige-50: #FAF7F2;
+  --color-beige-100: #F5F0E8;
+  --color-beige-200: #EDE8DC;
+  --color-beige-300: #E0D9CC;
+  
+  --color-mint-100: #E2F9EE;
+  --color-mint-200: #A4EBCA;
+  --color-mint-300: #62D5A1;
+  --color-mint-400: #2BBF84;
+  --color-mint-500: #1F9D6B;
+  
+  --color-text-primary: #2C2C2C;
+  --color-text-secondary: #6B6B6B;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  --radius-2xl: 8px;
+  --radius-xl: 8px;
+  --radius-lg: 8px;
+  --radius-md: 8px;
+  --radius-sm: 8px;
+  --radius-card: 8px;
+  --radius-input: 8px;
+  --radius-badge: 999px;
+  
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-premium: 0 10px 30px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-beige-50);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+
+  input, select, textarea {
+    border-radius: var(--radius-input);
+    border: 1px solid var(--color-beige-300);
+    background-color: white;
+    outline: none;
+    transition: all 0.2s ease-in-out;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #9CA3AF !important;
+    opacity: 0.8;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--color-mint-400);
+    box-shadow: 0 0 0 3px rgba(31, 157, 107, 0.15);
+  }
+
+  button {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+}
+
+/* Micro-animations and premium styles */
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-beige-100);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-beige-300);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-mint-200);
+}
+
+/* Editor custom style for Tiptap */
+.tiptap {
+  min-height: 150px;
+  outline: none;
+  padding: 12px;
+}
+.tiptap p {
+  margin-bottom: 8px;
+}
+.tiptap h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+.tiptap ul {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin-bottom: 8px;
+}
+
+/* 🌙 Sleek, Premium Dark Mode CSS Variable System */
+.dark {
+  --color-beige-50: #0c0c0c;
+  --color-beige-100: #161616;
+  --color-beige-200: #1f1f1f;
+  --color-beige-300: #2e2e2e;
+  
+  --color-mint-100: #11261b;
+  --color-mint-200: #1b3d2b;
+  --color-mint-300: #26553b;
+  --color-mint-400: #2bbf84;
+  --color-mint-500: #1f9d6b;
+  
+  --color-text-primary: #f2f2f2;
+  --color-text-secondary: #a5a5a5;
+
+  --shadow-premium: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* Dark mode selective component color mappings */
+.dark .bg-white {
+  background-color: var(--color-beige-100) !important;
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+  background-color: var(--color-beige-200) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-beige-300) !important;
+}
+
+.dark .bg-beige-200 {
+  background-color: var(--color-beige-200) !important;
+}
+
+.dark .bg-beige-100 {
+  background-color: var(--color-beige-100) !important;
+}
+
+.dark .border-beige-200,
+.dark .border-beige-300 {
+  border-color: var(--color-beige-300) !important;
+}
+
+.dark header {
+  background-color: rgba(22, 22, 22, 0.8) !important;
+  border-color: var(--color-beige-300) !important;
+}
+
+.dark .bg-beige-300\/40 {
+  background-color: rgba(46, 46, 46, 0.3) !important;
+}
+
+.dark .text-text-primary {
+  color: var(--color-text-primary) !important;
+}
+
+.dark .text-text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+
