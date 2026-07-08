@@ -45,8 +45,8 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
     - **AI Lecture Summaries:** Expands key bullet-point takeaways and hover-to-reveal review flashcards dynamically under active lecture players.
 
 *   **💻 Multi-Language Code Compiler Sandbox:**
-    - Live in-browser coding playground supporting **JavaScript, Python 3, C++ (GCC), Java (JDK), and Go (Golang)**.
-    - Connects to the public Piston API to compile and execute code inside isolated containers, writing logs directly to the browser output console.
+    - Live in-browser coding playground supporting **JavaScript, Python 3, C++ (GCC), TypeScript, and Go (Golang)**.
+    - Runs code compilers natively and securely in the browser to deliver instant console outputs.
     - **Tech-Course Exclusion Rule**: Coding Sandbox tab only mounts for tech courses containing programming keywords (like *Cyber Security*, *Advanced Java Programming*, *Computer Science*) and remains hidden for non-tech subjects.
 
 *   **📜 Landscape Completion Certificates:**
@@ -98,7 +98,7 @@ All seeded accounts use the password: **`Password@123`**
 | **08** - Paid Course Checkout modal | ![Course Checkout](screenshots/08_lms_student_course_checkout.png) |
 | **08b** - Landscape Completion Certificate | ![Certificate](screenshots/08b_lms_student_certificate.png) |
 | **09a** - Student Lectures Player & AI Summarizer | ![Lectures View](screenshots/09a_lms_student_course_lectures.png) |
-| **09b** - Code Compiler Sandbox (JavaScript/Python/C++/Go) | ![Coding Sandbox](screenshots/09b_lms_student_course_lectures.png) |
+| **09b** - Code Compiler Sandbox (JavaScript/Python/C++/TypeScript/Go) | ![Coding Sandbox](screenshots/09b_lms_student_course_lectures.png) |
 | **10** - Student Assignments Locker & Submissions | ![Student Assignments](screenshots/10_lms_student_course_assignments.png) |
 | **11** - Student Quiz submissions (Tab-switching logging) | ![Student Quiz](screenshots/11_lms_student_course_quizzes.png) |
 | **12** - Student Course Attendance logs | ![Student Attendance](screenshots/12_lms_student_course_attendance.png) |

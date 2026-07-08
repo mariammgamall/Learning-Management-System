@@ -80,20 +80,20 @@ export default function StudentCourseHub() {
   const [selectedLecture, setSelectedLecture] = useState<any>(null);
   const [showAiSummary, setShowAiSummary] = useState(false);
 
-  const [sandboxLanguage, setSandboxLanguage] = useState<'javascript' | 'python' | 'cpp' | 'java' | 'go'>('javascript');
+  const [sandboxLanguage, setSandboxLanguage] = useState<'javascript' | 'python' | 'cpp' | 'typescript' | 'go'>('javascript');
   
   const languageTemplates = {
     javascript: `// Write your JavaScript code here\nfunction greet(name) {\n  return "Hello, " + name + "! Welcome to LMS!";\n}\n\nconsole.log(greet("Mariam Gamal"));`,
     python: `# Write your Python code here\ndef greet(name):\n    return f"Hello, {name}! Welcome to LMS!"\n\nprint(greet("Mariam Gamal"))`,
     cpp: `// Write your C++ code here\n#include <iostream>\n#include <string>\n\nstd::string greet(std::string name) {\n    return "Hello, " + name + "! Welcome to LMS!";\n}\n\nint main() {\n    std::cout << greet("Mariam Gamal") << std::endl;\n    return 0;\n}`,
-    java: `// Write your Java code here\npublic class Main {\n    public static String greet(String name) {\n        return "Hello, " + name + "! Welcome to LMS!";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(greet("Mariam Gamal"));\n    }\n}`,
+    typescript: `// Write your TypeScript code here\nfunction greet(name: string): string {\n  return "Hello, " + name + "! Welcome to LMS!";\n}\n\nconsole.log(greet("Mariam Gamal"));`,
     go: `// Write your Go code here\npackage main\n\nimport "fmt"\n\nfunc greet(name string) string {\n\treturn "Hello, " + name + "! Welcome to LMS!"\n}\n\nfunc main() {\n\tfmt.Println(greet("Mariam Gamal"))\n}`
   };
 
   const [sandboxCode, setSandboxCode] = useState<string>(languageTemplates.javascript);
   const [sandboxOutput, setSandboxOutput] = useState<string[]>([]);
 
-  const handleLanguageChange = (lang: 'javascript' | 'python' | 'cpp' | 'java' | 'go') => {
+  const handleLanguageChange = (lang: 'javascript' | 'python' | 'cpp' | 'typescript' | 'go') => {
     setSandboxLanguage(lang);
     setSandboxCode(languageTemplates[lang]);
     setSandboxOutput([]);
@@ -178,27 +178,16 @@ export default function StudentCourseHub() {
         return;
       }
 
-      // 4. Java
-      if (sandboxLanguage === 'java') {
+      // 4. TypeScript
+      if (sandboxLanguage === 'typescript') {
         let cleanCode = sandboxCode
-          .replace(/public\s+class\s+\w+\s*\{/g, '')
-          .replace(/public\s+static\s+void\s+main\s*\(([^)]*)\)\s*\{/g, 'function main() {')
-          .replace(/public\s+static\s+(\w+|String)\s+(\w+)\s*\(([^)]*)\)\s*\{/g, (match, retType, fnName, params) => {
-            const cleanParams = params.replace(/(String|string|int|double|float|char|boolean)\s+/g, '');
-            return `function ${fnName}(${cleanParams}) {`;
-          })
-          .replace(/System\.out\.println\s*\(([^)]*)\);/g, 'console.log($1);');
+          .replace(/:\s*(string|number|boolean|any|void|unknown|never|Record<[^>]+>|Array<[^>]+>)/g, '')
+          .replace(/as\s+(string|number|boolean|any)/g, '');
 
-        const lastBraceIdx = cleanCode.lastIndexOf('}');
-        if (lastBraceIdx !== -1) {
-          cleanCode = cleanCode.substring(0, lastBraceIdx) + cleanCode.substring(lastBraceIdx + 1);
-        }
-
-        cleanCode += '\nmain();';
         const sandboxFn = new Function('console', cleanCode);
         sandboxFn(customConsole);
         setSandboxOutput(logs.length === 0 ? ['⚠️ Execution completed with no outputs.'] : logs);
-        addToast('Java execution completed successfully!', 'success');
+        addToast('TypeScript execution completed successfully!', 'success');
         return;
       }
 
@@ -978,7 +967,7 @@ export default function StudentCourseHub() {
                   <Terminal className="w-5 h-5 text-mint-500" />
                   <div>
                     <h3 className="text-sm font-bold text-text-primary">Multi-Language Coding Sandbox</h3>
-                    <p className="text-[10px] text-text-secondary mt-0.5">Write algorithms in Python, C++, Java, Go, or JS and compile dynamically.</p>
+                    <p className="text-[10px] text-text-secondary mt-0.5">Write algorithms in Python, C++, TypeScript, Go, or JS and compile dynamically.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -990,7 +979,7 @@ export default function StudentCourseHub() {
                     <option value="javascript">JavaScript</option>
                     <option value="python">Python 3</option>
                     <option value="cpp">C++ (GCC)</option>
-                    <option value="java">Java (JDK)</option>
+                    <option value="typescript">TypeScript</option>
                     <option value="go">Go (Golang)</option>
                   </select>
                   <button
