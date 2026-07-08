@@ -20,7 +20,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,

@@ -54,7 +54,7 @@ function ResetPasswordForm() {
   const onSubmit = async (data: ResetPasswordValues) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
       const response = await axios.post(`${API_URL}/auth/reset-password`, data);
 
       addToast(response.data.message || 'Password reset successfully!', 'success');

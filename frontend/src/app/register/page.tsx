@@ -43,7 +43,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
       const response = await axios.post(`${API_URL}/auth/signup`, data);
 
       addToast(response.data.message || 'Account created successfully!', 'success');

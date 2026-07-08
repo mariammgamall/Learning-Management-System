@@ -55,7 +55,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
       // Post request supporting refresh token cookie
       const response = await axios.post(`${API_URL}/auth/login`, data, {
         withCredentials: true,
