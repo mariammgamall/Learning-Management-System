@@ -80,3 +80,5 @@ app.listen(PORT, () => {
   console.log(`👉 API Prefix: http://localhost:${PORT}/api/v1`);
   console.log(`==================================================`);
 });
+
+export default app;
