@@ -257,12 +257,53 @@ router.post('/:id/join', authGuard, async (req: AuthenticatedRequest, res: Respo
         id: user.id,
         name: user.name,
         role: user.role,
+        micOn: true,
+        cameraOn: true,
       });
     }
     
     return res.status(200).json({ success: true, list: activeAttendees[id] });
   } catch (error) {
     console.error('Join meeting attendee error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   POST /api/v1/meetings/:id/update-media
+// @desc    Update active attendee mic/camera status
+router.post('/:id/update-media', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user!;
+    const { micOn, cameraOn } = req.body;
+
+    if (activeAttendees[id]) {
+      const attendee = activeAttendees[id].find(a => a.id === user.id);
+      if (attendee) {
+        if (typeof micOn === 'boolean') attendee.micOn = micOn;
+        if (typeof cameraOn === 'boolean') attendee.cameraOn = cameraOn;
+      } else {
+        activeAttendees[id].push({
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          micOn: micOn ?? true,
+          cameraOn: cameraOn ?? true,
+        });
+      }
+    } else {
+      activeAttendees[id] = [{
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        micOn: micOn ?? true,
+        cameraOn: cameraOn ?? true,
+      }];
+    }
+
+    return res.status(200).json({ success: true, list: activeAttendees[id] });
+  } catch (error) {
+    console.error('Update media status error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

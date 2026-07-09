@@ -168,11 +168,20 @@ export default function MeetingRoomPage() {
     return () => clearInterval(interval);
   }, [meetingId, router]);
 
+  const updateMediaStatus = async (newMic: boolean, newCam: boolean) => {
+    try {
+      await api.post(`/meetings/${meetingId}/update-media`, { micOn: newMic, cameraOn: newCam });
+    } catch (e) {
+      console.error('Failed to update media status:', e);
+    }
+  };
+
   // Sync join/leave state with backend activeAttendee registry
   useEffect(() => {
     const joinCall = async () => {
       try {
         await api.post(`/meetings/${meetingId}/join`);
+        await api.post(`/meetings/${meetingId}/update-media`, { micOn, cameraOn });
         fetchParticipants();
       } catch (err) {
         console.error('Failed to join call attendee registry:', err);
@@ -232,32 +241,46 @@ export default function MeetingRoomPage() {
 
   // Toggle Camera
   const toggleCamera = () => {
+    let nextState = !cameraOn;
     if (stream) {
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
-        setCameraOn(videoTrack.enabled);
+        nextState = videoTrack.enabled;
       }
-    } else {
-      setCameraOn(!cameraOn);
     }
+    setCameraOn(nextState);
+    updateMediaStatus(micOn, nextState);
   };
 
   // Toggle Microphone
   const toggleMic = () => {
+    let nextState = !micOn;
     if (stream) {
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
-        setMicOn(audioTrack.enabled);
+        nextState = audioTrack.enabled;
       }
-    } else {
-      setMicOn(!micOn);
     }
+    setMicOn(nextState);
+    updateMediaStatus(nextState, cameraOn);
   };
 
   // Toggle Screen Sharing Real
   const toggleScreenSharing = async () => {
+    // Check if mobile device
+    const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    if (isMobile) {
+      addToast(lang === 'en' ? 'Screen sharing is only supported on Desktop browsers.' : 'مشاركة الشاشة مدعومة فقط على متصفحات الكمبيوتر.', 'error');
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      addToast(lang === 'en' ? 'Screen sharing is not supported by your browser.' : 'متصفحك لا يدعم مشاركة الشاشة.', 'error');
+      return;
+    }
+
     if (isScreenSharing) {
       // Stop screen sharing
       if (screenStreamRef.current) {
@@ -448,10 +471,10 @@ Status: Successfully Recorded and Compiled.`;
       <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
         
         {/* Left Side: Video Feeds Workspace */}
-        <div className={`flex-1 p-6 overflow-y-auto flex items-center justify-center ${
+        <div className={`flex-1 max-h-[45vh] lg:max-h-none p-3 lg:p-6 overflow-y-auto flex items-center justify-center ${
           theme === 'dark' ? 'bg-neutral-950' : 'bg-beige-50/30'
         }`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-6 w-full max-w-4xl">
             
             {/* Local User Preview Frame */}
             <div className={`aspect-video border rounded-2xl relative overflow-hidden flex items-center justify-center shadow-lg ${
@@ -531,7 +554,7 @@ Status: Successfully Recorded and Compiled.`;
         </div>
 
         {/* Right Side: Sidebar Panel (Chat / Participants tabs) */}
-        <aside className={`w-full lg:w-80 border-t lg:border-t-0 lg:border-l flex flex-col justify-between overflow-hidden ${
+        <aside className={`w-full lg:w-80 h-[50vh] lg:h-auto border-t lg:border-t-0 lg:border-l flex flex-col justify-between overflow-hidden flex-shrink-0 lg:flex-shrink ${
           theme === 'dark' ? 'border-neutral-800 bg-neutral-900' : 'border-beige-200 bg-white'
         }`}>
           
@@ -661,17 +684,8 @@ Status: Successfully Recorded and Compiled.`;
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {isMe ? (
-                        <>
-                          {cameraOn ? <Video className="w-4 h-4 text-mint-500" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
-                          {micOn ? <Mic className="w-4 h-4 text-mint-500" /> : <MicOff className="w-4 h-4 text-rose-500" />}
-                        </>
-                      ) : (
-                        <>
-                          <Video className="w-4 h-4 text-mint-500" />
-                          <Mic className="w-4 h-4 text-mint-500" />
-                        </>
-                      )}
+                      {(p.cameraOn ?? true) ? <Video className="w-4 h-4 text-mint-500" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
+                      {(p.micOn ?? true) ? <Mic className="w-4 h-4 text-mint-500" /> : <MicOff className="w-4 h-4 text-rose-500" />}
                     </div>
                   </div>
                 );
