@@ -940,7 +940,7 @@ export default function StudentCourseHub() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap font-medium">{ann.content}</p>
+                      <div className="text-xs text-text-primary leading-relaxed font-medium tiptap" dangerouslySetInnerHTML={{ __html: ann.content }} />
 
                       <CommentsThread
                         comments={ann.comments || []}

@@ -3,7 +3,17 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, Heading3, List, Code } from 'lucide-react';
+import Underline from '@tiptap/extension-underline';
+import Highlight from '@tiptap/extension-highlight';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Highlighter,
+  Heading3,
+  List,
+  Code,
+} from 'lucide-react';
 
 interface TiptapEditorProps {
   value: string;
@@ -12,12 +22,23 @@ interface TiptapEditorProps {
 
 export default function TiptapEditor({ value, onChange }: TiptapEditorProps) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Underline,
+      Highlight.configure({ multicolor: true }),
+    ],
     content: value,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
   });
+
+  // Keep editor content in sync with external value resets (e.g. form submit success)
+  React.useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || '');
+    }
+  }, [value, editor]);
 
   if (!editor) {
     return null;
@@ -47,6 +68,28 @@ export default function TiptapEditor({ value, onChange }: TiptapEditorProps) {
           title="Italic"
         >
           <Italic className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          className={`p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-beige-300 transition-all ${
+            editor.isActive('underline') ? 'bg-beige-300 text-text-primary' : ''
+          }`}
+          title="Underline"
+        >
+          <UnderlineIcon className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          className={`p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-beige-300 transition-all ${
+            editor.isActive('highlight') ? 'bg-beige-300 text-text-primary' : ''
+          }`}
+          title="Highlight"
+        >
+          <Highlighter className="w-4 h-4" />
         </button>
 
         <button

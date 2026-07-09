@@ -187,4 +187,25 @@
   color: var(--color-text-secondary) !important;
 }
 
+/* Tiptap rich formatting support classes */
+.tiptap mark {
+  background-color: #fef08a; /* yellow-200 */
+  color: #1e293b;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+.tiptap u {
+  text-decoration: underline;
+}
+.tiptap strong {
+  font-weight: bold;
+}
+.tiptap em {
+  font-style: italic;
+}
+.dark .tiptap mark {
+  background-color: #ca8a04; /* yellow-600 */
+  color: #ffffff;
+}
+
 

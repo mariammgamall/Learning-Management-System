@@ -35,6 +35,7 @@ import Link from 'next/link';
 import ModalPortal from '@/components/ModalPortal';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/hooks/useAuthStore';
+import TiptapEditor from '@/components/TiptapEditor';
 
 // CommentsThread component for rendering discussions
 const CommentsThread = ({
@@ -330,6 +331,7 @@ export default function TACourseWorkspace() {
     { text: '', type: 'MCQ', options: ['', ''], correctAnswer: '' }
   ]);
   const [manualQuizScore, setManualQuizScore] = useState('');
+  const [announceHtml, setAnnounceHtml] = useState('');
 
   const [activeSession, setActiveSession] = useState<any>(null);
   const [fullscreenQrUrl, setFullscreenQrUrl] = useState<string | null>(null);
@@ -711,23 +713,16 @@ export default function TACourseWorkspace() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    const content = (e.target as any).announcementContent.value;
-                    if (!content.trim()) return;
-                    postAnnouncementMutation.mutate(content, {
+                    if (!announceHtml || !announceHtml.trim()) return addToast('Announcement content cannot be empty', 'error');
+                    postAnnouncementMutation.mutate(announceHtml, {
                       onSuccess: () => {
-                        (e.target as any).announcementContent.value = '';
+                        setAnnounceHtml('');
                       }
                     });
                   }}
                   className="space-y-3"
                 >
-                  <textarea
-                    name="announcementContent"
-                    rows={3}
-                    placeholder={lang === 'en' ? "Write important announcement details here..." : "اكتب تفاصيل الإعلان الهامة هنا..."}
-                    className="w-full px-3 py-2 text-xs border border-beige-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-mint-500 bg-beige-50/50 text-text-primary font-medium"
-                    required
-                  />
+                  <TiptapEditor value={announceHtml} onChange={setAnnounceHtml} />
                   <div className="flex justify-end">
                     <button
                       type="submit"
@@ -771,7 +766,7 @@ export default function TACourseWorkspace() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap font-medium">{ann.content}</p>
+                      <div className="text-xs text-text-primary leading-relaxed font-medium tiptap" dangerouslySetInnerHTML={{ __html: ann.content }} />
 
                       <CommentsThread
                         comments={ann.comments || []}
@@ -1662,18 +1657,46 @@ export default function TACourseWorkspace() {
 
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold text-text-primary block">Correct Answer</label>
-                        <input
-                          type="text"
-                          value={q.correctAnswer}
-                          onChange={(e) => {
-                            const list = [...quizQuestions];
-                            list[idx].correctAnswer = e.target.value;
-                            setQuizQuestions(list);
-                          }}
-                          className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg"
-                          placeholder="e.g. Correct Option / True / Keyword answer"
-                          required
-                        />
+                        {q.type === 'TRUE_FALSE' ? (
+                          <select
+                            value={q.correctAnswer}
+                            onChange={(e) => {
+                              const list = [...quizQuestions];
+                              list[idx].correctAnswer = e.target.value;
+                              setQuizQuestions(list);
+                            }}
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg font-bold bg-white"
+                          >
+                            <option value="">Select Option</option>
+                            <option value="True">True</option>
+                            <option value="False">False</option>
+                          </select>
+                        ) : q.type === 'SHORT_ANSWER' ? (
+                          <textarea
+                            value={q.correctAnswer}
+                            onChange={(e) => {
+                              const list = [...quizQuestions];
+                              list[idx].correctAnswer = e.target.value;
+                              setQuizQuestions(list);
+                            }}
+                            rows={3}
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg font-semibold"
+                            placeholder="Provide reference grading criteria or expected key concepts..."
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={q.correctAnswer}
+                            onChange={(e) => {
+                              const list = [...quizQuestions];
+                              list[idx].correctAnswer = e.target.value;
+                              setQuizQuestions(list);
+                            }}
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg"
+                            placeholder="e.g. Correct Option"
+                            required
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
