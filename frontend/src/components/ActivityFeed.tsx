@@ -456,182 +456,184 @@ export default function ActivityFeed() {
       </div>
 
       {/* 1. Create Post Card */}
-      <div className="bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft">
-        <form onSubmit={handleCreatePost} className="space-y-4">
-          <div className="flex gap-3">
-            {/* User Initials Circle */}
-            <div className="w-10 h-10 rounded-full bg-mint-100 text-mint-600 font-extrabold flex items-center justify-center text-sm border border-mint-200 flex-shrink-0">
-              {user?.name.charAt(0).toUpperCase()}
-            </div>
-            <textarea
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              placeholder={lang === 'en' ? "Share an academic achievement, study update or query..." : "شارك إنجازاً أكاديمياً، تحديث دراسي أو استفساراً..."}
-              rows={2}
-              className="w-full px-4 py-3 bg-beige-50/50 border border-beige-200 rounded-2xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all resize-none"
-            />
-          </div>
-
-          {/* Multiple Media Upload Preview Grid */}
-          {selectedMedia.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2 border border-beige-200 p-3 rounded-2xl bg-beige-50/50 max-h-80 overflow-y-auto">
-              {selectedMedia.map((mediaItem, idx) => (
-                <div key={idx} className="relative rounded-xl overflow-hidden border border-beige-200 bg-white h-24 flex items-center justify-center">
-                  {mediaItem.type === 'VIDEO' ? (
-                    <video src={mediaItem.previewUrl} className="w-full h-full object-cover" muted />
-                  ) : (
-                    <img src={mediaItem.previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      URL.revokeObjectURL(mediaItem.previewUrl);
-                      setSelectedMedia((prev) => prev.filter((_, i) => i !== idx));
-                    }}
-                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-[7px] text-white rounded font-bold uppercase tracking-wider">
-                    {mediaItem.type}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Event Scheduler Form */}
-          {showEventInputs && (
-            <div className="bg-beige-50/50 p-4 border border-beige-200 rounded-2xl space-y-3 relative my-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEventInputs(false);
-                  setEventTitle('');
-                  setEventDate('');
-                }}
-                className="absolute top-2 right-2 text-text-secondary hover:text-rose-500 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">
-                {lang === 'en' ? 'Create Event' : 'إنشاء حدث'}
+      {activeFeedTab === 'all' && (
+        <div className="bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft">
+          <form onSubmit={handleCreatePost} className="space-y-4">
+            <div className="flex gap-3">
+              {/* User Initials Circle */}
+              <div className="w-10 h-10 rounded-full bg-mint-100 text-mint-600 font-extrabold flex items-center justify-center text-sm border border-mint-200 flex-shrink-0">
+                {user?.name.charAt(0).toUpperCase()}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-text-primary block">
-                    {lang === 'en' ? 'Event Title' : 'عنوان الحدث'}
-                  </label>
-                  <input
-                    type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    placeholder={lang === 'en' ? 'Seminar, presentation, meeting...' : 'ندوة، عرض تقديمي، اجتماع...'}
-                    className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
-                    required
-                  />
+              <textarea
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                placeholder={lang === 'en' ? "Share an academic achievement, study update or query..." : "شارك إنجازاً أكاديمياً، تحديث دراسي أو استفساراً..."}
+                rows={2}
+                className="w-full px-4 py-3 bg-beige-50/50 border border-beige-200 rounded-2xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all resize-none"
+              />
+            </div>
+
+            {/* Multiple Media Upload Preview Grid */}
+            {selectedMedia.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2 border border-beige-200 p-3 rounded-2xl bg-beige-50/50 max-h-80 overflow-y-auto">
+                {selectedMedia.map((mediaItem, idx) => (
+                  <div key={idx} className="relative rounded-xl overflow-hidden border border-beige-200 bg-white h-24 flex items-center justify-center">
+                    {mediaItem.type === 'VIDEO' ? (
+                      <video src={mediaItem.previewUrl} className="w-full h-full object-cover" muted />
+                    ) : (
+                      <img src={mediaItem.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        URL.revokeObjectURL(mediaItem.previewUrl);
+                        setSelectedMedia((prev) => prev.filter((_, i) => i !== idx));
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-[7px] text-white rounded font-bold uppercase tracking-wider">
+                      {mediaItem.type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Event Scheduler Form */}
+            {showEventInputs && (
+              <div className="bg-beige-50/50 p-4 border border-beige-200 rounded-2xl space-y-3 relative my-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEventInputs(false);
+                    setEventTitle('');
+                    setEventDate('');
+                  }}
+                  className="absolute top-2 right-2 text-text-secondary hover:text-rose-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">
+                  {lang === 'en' ? 'Create Event' : 'إنشاء حدث'}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-text-primary block">
-                    {lang === 'en' ? 'Event Date & Time' : 'تاريخ ووقت الحدث'}
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-text-primary block">
+                      {lang === 'en' ? 'Event Title' : 'عنوان الحدث'}
+                    </label>
+                    <input
+                      type="text"
+                      value={eventTitle}
+                      onChange={(e) => setEventTitle(e.target.value)}
+                      placeholder={lang === 'en' ? 'Seminar, presentation, meeting...' : 'ندوة، عرض تقديمي، اجتماع...'}
+                      className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-text-primary block">
+                      {lang === 'en' ? 'Event Date & Time' : 'تاريخ ووقت الحدث'}
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
+            )}
+
+            <div className="flex justify-between items-center pt-2 border-t border-beige-100/60">
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  id="post-photo-input"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files) {
+                      const newMedia = Array.from(files).map((file) => ({
+                        file,
+                        type: 'PHOTO' as const,
+                        previewUrl: URL.createObjectURL(file),
+                      }));
+                      setSelectedMedia((prev) => [...prev, ...newMedia]);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                    selectedMedia.some(m => m.type === 'PHOTO') ? 'text-indigo-500 bg-indigo-50/50' : 'text-text-secondary hover:bg-beige-50'
+                  }`}
+                  onClick={() => document.getElementById('post-photo-input')?.click()}
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>{lang === 'en' ? 'Photo' : 'صورة'}</span>
+                </button>
+
+                <input
+                  type="file"
+                  id="post-video-input"
+                  accept="video/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files) {
+                      const newMedia = Array.from(files).map((file) => ({
+                        file,
+                        type: 'VIDEO' as const,
+                        previewUrl: URL.createObjectURL(file),
+                      }));
+                      setSelectedMedia((prev) => [...prev, ...newMedia]);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                    selectedMedia.some(m => m.type === 'VIDEO') ? 'text-purple-500 bg-purple-50/50' : 'text-text-secondary hover:bg-beige-50'
+                  }`}
+                  onClick={() => document.getElementById('post-video-input')?.click()}
+                >
+                  <VideoIcon className="w-3.5 h-3.5 text-purple-500" />
+                  <span>{lang === 'en' ? 'Video' : 'فيديو'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                    showEventInputs ? 'text-amber-500 bg-amber-50/50' : 'text-text-secondary hover:bg-beige-50'
+                  }`}
+                  onClick={() => setShowEventInputs(!showEventInputs)}
+                >
+                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{lang === 'en' ? 'Event' : 'حدث'}</span>
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={createPostMutation.isPending || (!postContent.trim() && selectedMedia.length === 0 && !eventTitle)}
+                className="px-5 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
+              >
+                {createPostMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{lang === 'en' ? 'Post' : 'نشر'}</span>
+              </button>
             </div>
-          )}
-
-          <div className="flex justify-between items-center pt-2 border-t border-beige-100/60">
-            <div className="flex gap-2">
-              <input
-                type="file"
-                id="post-photo-input"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files) {
-                    const newMedia = Array.from(files).map((file) => ({
-                      file,
-                      type: 'PHOTO' as const,
-                      previewUrl: URL.createObjectURL(file),
-                    }));
-                    setSelectedMedia((prev) => [...prev, ...newMedia]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-              <button
-                type="button"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
-                  selectedMedia.some(m => m.type === 'PHOTO') ? 'text-indigo-500 bg-indigo-50/50' : 'text-text-secondary hover:bg-beige-50'
-                }`}
-                onClick={() => document.getElementById('post-photo-input')?.click()}
-              >
-                <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                <span>{lang === 'en' ? 'Photo' : 'صورة'}</span>
-              </button>
-
-              <input
-                type="file"
-                id="post-video-input"
-                accept="video/*"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files) {
-                    const newMedia = Array.from(files).map((file) => ({
-                      file,
-                      type: 'VIDEO' as const,
-                      previewUrl: URL.createObjectURL(file),
-                    }));
-                    setSelectedMedia((prev) => [...prev, ...newMedia]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-              <button
-                type="button"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
-                  selectedMedia.some(m => m.type === 'VIDEO') ? 'text-purple-500 bg-purple-50/50' : 'text-text-secondary hover:bg-beige-50'
-                }`}
-                onClick={() => document.getElementById('post-video-input')?.click()}
-              >
-                <VideoIcon className="w-3.5 h-3.5 text-purple-500" />
-                <span>{lang === 'en' ? 'Video' : 'فيديو'}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
-                  showEventInputs ? 'text-amber-500 bg-amber-50/50' : 'text-text-secondary hover:bg-beige-50'
-                }`}
-                onClick={() => setShowEventInputs(!showEventInputs)}
-              >
-                <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                <span>{lang === 'en' ? 'Event' : 'حدث'}</span>
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              disabled={createPostMutation.isPending || (!postContent.trim() && selectedMedia.length === 0 && !eventTitle)}
-              className="px-5 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
-            >
-              {createPostMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{lang === 'en' ? 'Post' : 'نشر'}</span>
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
 
 
 
