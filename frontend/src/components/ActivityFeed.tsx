@@ -223,8 +223,8 @@ export default function ActivityFeed() {
 
           {/* Image Upload Preview */}
           {photoPreviewUrl && (
-            <div className="relative w-full max-h-60 rounded-2xl overflow-hidden border border-beige-200 my-2">
-              <img src={photoPreviewUrl} alt="Upload preview" className="w-full h-full object-cover" />
+            <div className="relative w-full border border-beige-200 rounded-2xl my-2 bg-beige-50 overflow-hidden">
+              <img src={photoPreviewUrl} alt="Upload preview" className="w-full h-auto max-h-60 object-contain mx-auto" />
               <button
                 type="button"
                 onClick={() => {
@@ -397,8 +397,8 @@ export default function ActivityFeed() {
 
                 {/* Render Post Image */}
                 {post.imageUrl && (
-                  <div className="rounded-2xl overflow-hidden border border-beige-200 max-h-[350px] w-full flex items-center justify-center bg-beige-50 my-2">
-                    <img src={post.imageUrl} alt="Post Attachment" className="w-full h-full object-cover" />
+                  <div className="rounded-2xl overflow-hidden border border-beige-200 w-full bg-beige-50 my-2">
+                    <img src={post.imageUrl} alt="Post Attachment" className="w-full h-auto max-h-[500px] object-contain mx-auto" />
                   </div>
                 )}
 
