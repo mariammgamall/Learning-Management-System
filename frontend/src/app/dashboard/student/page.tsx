@@ -1,14 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../utils/api';
-import { BookOpen, Calendar, BookOpenCheck, Award, ChevronRight, Play, Flame, Zap, Trophy } from 'lucide-react';
+import { BookOpen, Calendar, BookOpenCheck, Award, ChevronRight, Play, Flame, Zap, Trophy, X, FileText, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from '../../../hooks/useTranslation';
+import ModalPortal from '@/components/ModalPortal';
 
 export default function StudentDashboard() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
   
   // 1. Fetch Dashboard Stats
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
@@ -49,6 +51,7 @@ export default function StudentDashboard() {
       value: metrics.pendingAssignmentsCount,
       icon: Calendar,
       color: 'bg-amber-100 text-amber-500',
+      clickable: true,
     },
     {
       label: t('avg_assignment_score'),
@@ -91,21 +94,41 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {statCards.map((card, idx) => {
           const Icon = card.icon;
+          const isClickable = !!card.clickable && metrics.pendingAssignmentsCount > 0;
           return (
             <div
               key={idx}
-              className="p-5 bg-white rounded-2xl shadow-soft border border-beige-200/80 flex items-center gap-4 transition-transform hover:translate-y-[-2px]"
+              onClick={() => {
+                if (isClickable) {
+                  setPendingModalOpen(true);
+                }
+              }}
+              className={`p-5 bg-white rounded-2xl shadow-soft border border-beige-200/80 flex items-center gap-4 transition-all duration-200 ${
+                isClickable 
+                  ? 'cursor-pointer hover:border-amber-300 hover:shadow-md hover:scale-[1.02]' 
+                  : ''
+              }`}
             >
               <div className={`p-3.5 rounded-xl ${card.color} flex-shrink-0`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-text-secondary block uppercase tracking-wider">
-                  {card.label}
-                </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold text-text-secondary block uppercase tracking-wider truncate">
+                    {card.label}
+                  </span>
+                  {isClickable && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  )}
+                </div>
                 <span className="text-lg font-extrabold text-text-primary block mt-0.5">
                   {card.value}
                 </span>
+                {isClickable && (
+                  <span className="text-[8px] font-semibold text-amber-600 block mt-0.5 hover:underline">
+                    {lang === 'en' ? 'View Details →' : 'عرض التفاصيل ←'}
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -329,6 +352,84 @@ export default function StudentDashboard() {
         </div>
 
       </div>
+
+      {/* 4. Pending Assignments Details Modal */}
+      {pendingModalOpen && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white p-6 rounded-3xl shadow-premium border border-beige-200 animate-slide-up space-y-4">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-beige-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-sm font-bold text-text-primary">
+                    {lang === 'en' ? 'Pending Homework Assignments' : 'التكليفات والواجبات المعلقة'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setPendingModalOpen(false)}
+                  className="p-1.5 hover:bg-beige-100 rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Assignments list */}
+              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {!statsData?.pendingAssignments || statsData.pendingAssignments.length === 0 ? (
+                  <p className="text-center text-xs text-text-secondary py-6">
+                    {lang === 'en' ? 'No pending assignments!' : 'لا توجد أي تكليفات معلقة حالياً!'}
+                  </p>
+                ) : (
+                  statsData.pendingAssignments.map((assignment: any) => (
+                    <div 
+                      key={assignment.id}
+                      className="p-3 bg-amber-50/50 border border-amber-100/70 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[8.5px] font-extrabold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                            {assignment.course?.code}
+                          </span>
+                          <span className="text-[9px] text-text-secondary font-semibold truncate max-w-[150px]">
+                            {assignment.course?.title}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-text-primary mt-1 truncate">{assignment.title}</h4>
+                        <p className="text-[9.5px] text-rose-500 font-semibold mt-0.5">
+                          {lang === 'en' ? 'Due:' : 'تاريخ التسليم:'} {new Date(assignment.deadline).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', {
+                            weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/dashboard/student/courses/${assignment.course?.id}`}
+                        onClick={() => setPendingModalOpen(false)}
+                        className="py-1.5 px-3 bg-mint-500 hover:bg-mint-400 text-white font-bold text-[10px] rounded-xl flex items-center justify-center gap-1 transition-all flex-shrink-0"
+                      >
+                        {lang === 'en' ? 'Go to Course' : 'الذهاب للمقرر'} <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Close Footer button */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setPendingModalOpen(false)}
+                  className="px-4 py-2 bg-beige-200 hover:bg-beige-300 text-text-secondary hover:text-text-primary font-bold text-xs rounded-xl transition-all"
+                >
+                  {lang === 'en' ? 'Close' : 'إغلاق'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </ModalPortal>
+      )}
 
     </div>
   );

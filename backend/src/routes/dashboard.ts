@@ -144,12 +144,34 @@ router.get('/stats', authGuard, async (req: AuthenticatedRequest, res: Response)
         ? quizAttempts.reduce((acc, curr) => acc + (curr.score || 0), 0) / quizAttempts.length
         : 0;
 
-      const [pendingAssignments, completedQuizzes] = await Promise.all([
+      const [pendingAssignmentsCount, pendingAssignmentsList, completedQuizzes] = await Promise.all([
         prisma.assignment.count({
           where: {
             courseId: { in: courseIds },
             submissions: { none: { studentId: user.id } },
             deadline: { gt: new Date() },
+          },
+        }),
+        prisma.assignment.findMany({
+          where: {
+            courseId: { in: courseIds },
+            submissions: { none: { studentId: user.id } },
+            deadline: { gt: new Date() },
+          },
+          select: {
+            id: true,
+            title: true,
+            deadline: true,
+            course: {
+              select: {
+                id: true,
+                code: true,
+                title: true,
+              },
+            },
+          },
+          orderBy: {
+            deadline: 'asc',
           },
         }),
         prisma.quizAttempt.count({
@@ -167,9 +189,10 @@ router.get('/stats', authGuard, async (req: AuthenticatedRequest, res: Response)
           lectureCompletionPercentage: lectureCompletion,
           averageAssignmentGrade: Math.round(avgGrade * 10) / 10,
           averageQuizGrade: Math.round(avgQuizGrade * 10) / 10,
-          pendingAssignmentsCount: pendingAssignments,
+          pendingAssignmentsCount,
           quizzesTakenCount: completedQuizzes,
         },
+        pendingAssignments: pendingAssignmentsList,
       });
     }
 
