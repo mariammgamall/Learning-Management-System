@@ -471,7 +471,7 @@ Status: Successfully Recorded and Compiled.`;
       <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
         
         {/* Left Side: Video Feeds Workspace */}
-        <div className={`flex-1 max-h-[45vh] lg:max-h-none p-3 lg:p-6 overflow-y-auto flex items-center justify-center ${
+        <div className={`flex-shrink-0 h-[30vh] lg:h-auto lg:flex-1 p-3 lg:p-6 overflow-y-auto flex items-center justify-center ${
           theme === 'dark' ? 'bg-neutral-950' : 'bg-beige-50/30'
         }`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-6 w-full max-w-4xl">
@@ -554,7 +554,7 @@ Status: Successfully Recorded and Compiled.`;
         </div>
 
         {/* Right Side: Sidebar Panel (Chat / Participants tabs) */}
-        <aside className={`w-full lg:w-80 h-[50vh] lg:h-auto border-t lg:border-t-0 lg:border-l flex flex-col justify-between overflow-hidden flex-shrink-0 lg:flex-shrink ${
+        <aside className={`w-full lg:w-80 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-l flex flex-col justify-between overflow-hidden ${
           theme === 'dark' ? 'border-neutral-800 bg-neutral-900' : 'border-beige-200 bg-white'
         }`}>
           
@@ -697,7 +697,7 @@ Status: Successfully Recorded and Compiled.`;
       </div>
 
       {/* Bottom Controls Bar */}
-      <footer className={`h-20 border-t px-6 flex items-center justify-between flex-shrink-0 ${
+      <footer className={`h-16 lg:h-20 border-t px-4 lg:px-6 flex items-center justify-between flex-shrink-0 ${
         theme === 'dark' ? 'bg-neutral-900/90 border-neutral-850 text-white' : 'bg-white border-beige-200 text-text-primary'
       }`}>
         
@@ -707,29 +707,29 @@ Status: Successfully Recorded and Compiled.`;
         </div>
 
         {/* Center: Device controls */}
-        <div className="flex items-center gap-3 mx-auto md:mx-0">
+        <div className="flex items-center gap-2 md:gap-3 mx-auto md:mx-0">
           {/* Mute button */}
           <button
             onClick={toggleMic}
-            className={`p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${micBtnClasses}`}
+            className={`p-2.5 md:p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${micBtnClasses}`}
             title={micOn ? 'Mute Microphone' : 'Unmute Microphone'}
           >
-            {micOn ? <Mic className="w-4.5 h-4.5" /> : <MicOff className="w-4.5 h-4.5" />}
+            {micOn ? <Mic className="w-4 h-4 md:w-4.5 md:h-4.5" /> : <MicOff className="w-4 h-4 md:w-4.5 md:h-4.5" />}
           </button>
 
           {/* Camera button */}
           <button
             onClick={toggleCamera}
-            className={`p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${camBtnClasses}`}
+            className={`p-2.5 md:p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${camBtnClasses}`}
             title={cameraOn ? 'Disable Video' : 'Enable Video'}
           >
-            {cameraOn ? <Video className="w-4.5 h-4.5" /> : <VideoOff className="w-4.5 h-4.5" />}
+            {cameraOn ? <Video className="w-4 h-4 md:w-4.5 md:h-4.5" /> : <VideoOff className="w-4 h-4 md:w-4.5 md:h-4.5" />}
           </button>
 
-          {/* Screen Share button - NATIVE DISPLAY SHARING API */}
+          {/* Screen Share button - Hidden on Mobile, only visible on Desktop */}
           <button
             onClick={toggleScreenSharing}
-            className={`p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${screenBtnClasses}`}
+            className={`hidden md:flex p-3 rounded-xl border transition-all active:scale-[0.96] shadow-md ${screenBtnClasses}`}
             title={lang === 'en' ? 'Share Screen' : 'مشاركة الشاشة'}
           >
             <Monitor className="w-4.5 h-4.5" />
@@ -748,19 +748,19 @@ Status: Successfully Recorded and Compiled.`;
                 handleLeave();
               }
             }}
-            className="p-3 rounded-xl bg-rose-600 border border-rose-500 text-white hover:bg-rose-500 hover:scale-105 active:scale-[0.96] shadow-md transition-all flex items-center justify-center"
+            className="p-2.5 md:p-3 rounded-xl bg-rose-600 border border-rose-500 text-white hover:bg-rose-500 hover:scale-105 active:scale-[0.96] shadow-md transition-all flex items-center justify-center"
             title={isHost ? 'End Meeting for All / Leave Meeting' : 'Leave Call'}
           >
-            <PhoneOff className="w-4.5 h-4.5 fill-white" />
+            <PhoneOff className="w-4 h-4 md:w-4.5 md:h-4.5 fill-white" />
           </button>
         </div>
 
-        {/* Right: Recording toggle button (blinks while active, stops and downloads on click) */}
+        {/* Right: Recording toggle button */}
         <div>
           <button
             onClick={handleToggleRecording}
             disabled={isRecording}
-            className={`px-4 py-2.5 border text-xs font-bold transition-all shadow-md active:scale-[0.98] flex items-center gap-2 rounded-xl ${
+            className={`px-3 py-2 md:px-4 md:py-2.5 border text-[10px] md:text-xs font-bold transition-all shadow-md active:scale-[0.98] flex items-center gap-1.5 md:gap-2 rounded-xl ${
               isRecordingActive
                 ? 'bg-rose-600 border-rose-500 text-white hover:bg-rose-500'
                 : theme === 'dark'
@@ -769,16 +769,16 @@ Status: Successfully Recorded and Compiled.`;
             }`}
           >
             {isRecording ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-3 h-3 md:w-3.5 md:h-3.5 animate-spin" />
             ) : (
-              <span className={`w-2.5 h-2.5 rounded-full bg-rose-500 ${isRecordingActive ? 'animate-ping' : ''}`} />
+              <span className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-rose-500 ${isRecordingActive ? 'animate-ping' : ''}`} />
             )}
             {isRecording ? (
               lang === 'en' ? 'Saving...' : 'جاري الحفظ...'
             ) : isRecordingActive ? (
               lang === 'en' ? 'Recording' : 'جاري التسجيل'
             ) : (
-              lang === 'en' ? 'Record Session' : 'تسجيل الجلسة'
+              lang === 'en' ? 'Record' : 'تسجيل'
             )}
           </button>
         </div>
