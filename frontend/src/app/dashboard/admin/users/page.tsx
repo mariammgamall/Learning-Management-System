@@ -294,13 +294,13 @@ export default function AdminUsers() {
               <form onSubmit={handleSubmitAdd(onAddSubmit)} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-primary block">Full Name</label>
-                  <input {...registerAdd('name')} type="text" placeholder="Dr. Alan Turing" className="w-full px-3 py-2 text-xs" />
+                  <input {...registerAdd('name')} type="text" className="w-full px-3 py-2 text-xs" />
                   {errorsAdd.name && <span className="text-[10px] text-rose-500">{errorsAdd.name.message}</span>}
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-primary block">Email Address</label>
-                  <input {...registerAdd('email')} type="email" placeholder="alan@lms.com" className="w-full px-3 py-2 text-xs" />
+                  <input {...registerAdd('email')} type="email" className="w-full px-3 py-2 text-xs" />
                   {errorsAdd.email && <span className="text-[10px] text-rose-500">{errorsAdd.email.message}</span>}
                 </div>
 
