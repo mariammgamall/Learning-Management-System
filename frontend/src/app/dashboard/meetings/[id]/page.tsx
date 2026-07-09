@@ -441,32 +441,6 @@ Status: Successfully Recorded and Compiled.`;
             {lang === 'en' ? 'Host' : 'المضيف'}: <strong className="text-text-primary font-bold">{meeting.hostName} ({meeting.hostRole})</strong>
           </span>
 
-          {isHost ? (
-            <button
-              onClick={() => {
-                if (confirm(lang === 'en' ? 'Are you sure you want to end this online meeting for all participants?' : 'هل أنت متأكد من رغبتك في إنهاء هذا الاجتماع لجميع الحاضرين؟')) {
-                  endMeetingMutation.mutate();
-                }
-              }}
-              disabled={endMeetingMutation.isPending}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-[0.98]"
-            >
-              {endMeetingMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PhoneOff className="w-3.5 h-3.5" />}
-              {lang === 'en' ? 'End Meeting' : 'إنهاء الاجتماع'}
-            </button>
-          ) : (
-            <button
-              onClick={handleLeave}
-              className={`px-4 py-2 border font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-[0.98] ${
-                theme === 'dark'
-                  ? 'bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700'
-                  : 'bg-mint-50 border-mint-200 text-mint-500 hover:bg-mint-100'
-              }`}
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              {lang === 'en' ? 'Leave Room' : 'مغادرة الغرفة'}
-            </button>
-          )}
         </div>
       </header>
 
