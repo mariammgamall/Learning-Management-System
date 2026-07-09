@@ -21,6 +21,8 @@ import {
   Video as VideoIcon,
   Bookmark,
   Repeat,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 interface Author {
@@ -89,6 +91,12 @@ export default function ActivityFeed() {
   const [activeFeedTab, setActiveFeedTab] = useState<'all' | 'saved' | 'reposts'>('all');
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
 
+  // Edit post and Quote repost states
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [repostModalPost, setRepostModalPost] = useState<Post | null>(null);
+  const [repostCommentText, setRepostCommentText] = useState('');
+
   // Fetch Feed
   const { data: posts = [], isLoading } = useQuery<Post[]>({
     queryKey: ['feedPosts'],
@@ -155,12 +163,14 @@ export default function ActivityFeed() {
 
   // Repost Mutation
   const repostMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const response = await api.post(`/posts/${postId}/repost`);
+    mutationFn: async ({ postId, content }: { postId: string; content?: string }) => {
+      const response = await api.post(`/posts/${postId}/repost`, { content });
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
+      setRepostModalPost(null);
+      setRepostCommentText('');
       addToast(
         data.reposted
           ? (lang === 'en' ? 'Reposted successfully!' : 'تم إعادة النشر بنجاح!')
@@ -170,6 +180,38 @@ export default function ActivityFeed() {
     },
     onError: (err: any) => {
       addToast(err.response?.data?.message || 'Failed to repost', 'error');
+    },
+  });
+
+  // Edit Post Mutation
+  const editPostMutation = useMutation({
+    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+      const response = await api.put(`/posts/${postId}`, { content });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
+      setEditingPostId(null);
+      setEditContent('');
+      addToast(lang === 'en' ? 'Post updated successfully!' : 'تم تحديث المنشور بنجاح!', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to update post', 'error');
+    },
+  });
+
+  // Delete Post Mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const response = await api.delete(`/posts/${postId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
+      addToast(lang === 'en' ? 'Post deleted successfully!' : 'تم حذف المنشور بنجاح!', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to delete post', 'error');
     },
   });
 
@@ -556,7 +598,7 @@ export default function ActivityFeed() {
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
                     {activeMenuPostId === post.id && (
-                      <div className="absolute right-0 mt-1 w-36 bg-white border border-beige-200 rounded-xl shadow-lg py-1 z-10 animate-fade-in text-[11px] font-bold text-text-primary">
+                      <div className="absolute right-0 mt-1 w-38 bg-white border border-beige-200 rounded-xl shadow-lg py-1 z-10 animate-fade-in text-[11px] font-bold text-text-primary">
                         <button
                           onClick={() => {
                             toggleSaveMutation.mutate(post.id);
@@ -567,158 +609,231 @@ export default function ActivityFeed() {
                           <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'text-mint-500 fill-mint-100' : 'text-text-secondary'}`} />
                           <span>{isSaved ? (lang === 'en' ? 'Unsave Post' : 'إلغاء الحفظ') : (lang === 'en' ? 'Save Post' : 'حفظ المنشور')}</span>
                         </button>
+
+                        {/* Edit post option (only if publisher and not a repost) */}
+                        {post.author.id === user?.id && !post.repostOfId && (
+                          <button
+                            onClick={() => {
+                              setEditingPostId(post.id);
+                              setEditContent(post.content);
+                              setActiveMenuPostId(null);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-beige-50 flex items-center gap-2 text-indigo-600"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>{lang === 'en' ? 'Edit Post' : 'تعديل المنشور'}</span>
+                          </button>
+                        )}
+
+                        {/* Delete post option (if publisher or admin) */}
+                        {(post.author.id === user?.id || user?.role === 'ADMIN') && (
+                          <button
+                            onClick={() => {
+                              if (confirm(lang === 'en' ? 'Are you sure you want to delete this?' : 'هل أنت متأكد من حذف هذا؟')) {
+                                deletePostMutation.mutate(post.id);
+                              }
+                              setActiveMenuPostId(null);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-beige-50 flex items-center gap-2 text-rose-600"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>
+                              {post.repostOfId
+                                ? (lang === 'en' ? 'Delete Repost' : 'حذف إعادة النشر')
+                                : (lang === 'en' ? 'Delete Post' : 'حذف المنشور')}
+                            </span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Post Content & Nested Repost */}
-                {post.repostOf ? (
-                  <div className="bg-beige-50/40 p-4 rounded-2xl border border-beige-200/80 space-y-3 text-left">
-                    {/* Original Author */}
-                    <div className="flex gap-2.5 items-center">
-                      <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-black text-indigo-600 text-[10px] flex-shrink-0">
-                        {post.repostOf.author.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-extrabold text-[11px] text-text-primary leading-tight">{post.repostOf.author.name}</span>
-                          <span className="px-1.5 py-0.2 text-[7px] font-black rounded-md bg-beige-200 text-text-secondary">
-                            {post.repostOf.author.role}
-                          </span>
-                        </div>
-                        <span className="text-[8px] text-text-secondary block font-medium mt-0.5">
-                          {getRelativeTime(post.repostOf.createdAt)}
-                        </span>
+                  {/* Post Content & Nested Repost */}
+                  {editingPostId === post.id ? (
+                    <div className="space-y-2 text-left">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full px-3 py-2 border border-beige-200 rounded-xl text-xs font-semibold focus:border-mint-500 focus:ring-1 focus:ring-mint-500 bg-beige-50/50 outline-none resize-none"
+                        rows={3}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => {
+                            setEditingPostId(null);
+                            setEditContent('');
+                          }}
+                          className="px-3 py-1.5 border border-beige-200 hover:bg-beige-50 rounded-lg text-[10px] font-bold text-text-secondary transition-all"
+                        >
+                          {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (editContent.trim()) {
+                              editPostMutation.mutate({ postId: post.id, content: editContent });
+                            }
+                          }}
+                          disabled={editPostMutation.isPending || !editContent.trim()}
+                          className="px-3 py-1.5 bg-mint-500 hover:bg-mint-400 text-white rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                        >
+                          {editPostMutation.isPending ? (lang === 'en' ? 'Saving...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save' : 'حفظ')}
+                        </button>
                       </div>
                     </div>
-
-                    {/* Original Content */}
-                    {post.repostOf.content && (
-                      <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
-                        {post.repostOf.content}
-                      </p>
-                    )}
-
-                    {/* Original Media Grid */}
-                    {post.repostOf.media && post.repostOf.media.length > 0 && (
-                      <div className={`grid gap-2 my-2 ${post.repostOf.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                        {post.repostOf.media.map((med) => (
-                          <div
-                            key={med.id}
-                            className={`relative rounded-xl overflow-hidden border border-beige-200 bg-beige-50 flex items-center justify-center ${
-                              post.repostOf!.media!.length === 1 ? 'w-full' : 'h-36 w-full'
-                            }`}
-                          >
-                            {med.type === 'VIDEO' ? (
-                              <video
-                                src={med.url}
-                                controls
-                                className={
-                                  post.repostOf!.media!.length === 1
-                                    ? 'w-full h-auto max-h-[400px] object-contain mx-auto'
-                                    : 'w-full h-full object-contain mx-auto'
-                                }
-                              />
-                            ) : (
-                              <img
-                                src={med.url}
-                                alt="Post Attachment"
-                                className={
-                                  post.repostOf!.media!.length === 1
-                                    ? 'w-full h-auto max-h-[400px] object-contain mx-auto'
-                                    : 'w-full h-full object-contain mx-auto'
-                                }
-                              />
-                            )}
+                  ) : post.repostOf ? (
+                    <div className="space-y-2">
+                      {post.content && (
+                        <p className="text-xs font-semibold text-text-primary leading-relaxed whitespace-pre-line text-left mb-2">
+                          {post.content}
+                        </p>
+                      )}
+                      <div className="bg-beige-50/40 p-4 rounded-2xl border border-beige-200/80 space-y-3 text-left">
+                        {/* Original Author */}
+                        <div className="flex gap-2.5 items-center">
+                          <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-black text-indigo-600 text-[10px] flex-shrink-0">
+                            {post.repostOf.author.name.charAt(0).toUpperCase()}
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Original Event */}
-                    {post.repostOf.eventTitle && (
-                      <div className="p-3.5 bg-amber-50/30 border border-amber-200/60 rounded-xl flex items-center gap-3 my-1">
-                        <div className="w-9 h-9 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0 text-amber-500 border border-amber-200/50">
-                          <Calendar className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <h4 className="text-[11px] font-extrabold text-text-primary truncate">{post.repostOf.eventTitle}</h4>
-                          <p className="text-[9px] text-text-secondary font-bold mt-0.5">
-                            {post.repostOf.eventDate ? new Date(post.repostOf.eventDate).toLocaleString() : ''}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {/* Render regular post content (standard post render code) */}
-                    {post.content && (
-                      <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
-                        {post.content}
-                      </p>
-                    )}
-
-                    {/* Render Post Media (Photos/Videos) Grid */}
-                    {post.media && post.media.length > 0 && (
-                      <div className={`grid gap-2 my-2 ${post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                        {post.media.map((med) => (
-                          <div
-                            key={med.id}
-                            className={`relative rounded-2xl overflow-hidden border border-beige-200 bg-beige-50 flex items-center justify-center ${
-                              post.media!.length === 1 ? 'w-full' : 'h-48 w-full'
-                            }`}
-                          >
-                            {med.type === 'VIDEO' ? (
-                              <video
-                                src={med.url}
-                                controls
-                                className={
-                                  post.media!.length === 1
-                                    ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
-                                    : 'w-full h-full object-contain mx-auto'
-                                }
-                              />
-                            ) : (
-                              <img
-                                src={med.url}
-                                alt="Post Attachment"
-                                className={
-                                  post.media!.length === 1
-                                    ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
-                                    : 'w-full h-full object-contain mx-auto'
-                                }
-                              />
-                            )}
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-extrabold text-[11px] text-text-primary leading-tight">{post.repostOf.author.name}</span>
+                              <span className="px-1.5 py-0.2 text-[7px] font-black rounded-md bg-beige-200 text-text-secondary">
+                                {post.repostOf.author.role}
+                              </span>
+                            </div>
+                            <span className="text-[8px] text-text-secondary block font-medium mt-0.5">
+                              {getRelativeTime(post.repostOf.createdAt)}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Render Post Image Fallback (legacy single image posts) */}
-                    {(!post.media || post.media.length === 0) && post.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden border border-beige-200 w-full bg-beige-50 my-2">
-                        <img src={post.imageUrl} alt="Post Attachment" className="w-full h-auto max-h-[500px] object-contain mx-auto" />
-                      </div>
-                    )}
-
-                    {/* Render Post Event */}
-                    {post.eventTitle && (
-                      <div className="p-4 bg-amber-50/30 border border-amber-200/60 rounded-2xl flex items-center gap-3.5 my-2">
-                        <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0 text-amber-500 border border-amber-200/50">
-                          <Calendar className="w-5 h-5" />
                         </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <h4 className="text-xs font-extrabold text-text-primary truncate">{post.eventTitle}</h4>
-                          <p className="text-[10px] text-text-secondary font-bold mt-1">
-                            {post.eventDate ? new Date(post.eventDate).toLocaleString() : ''}
+
+                        {/* Original Content */}
+                        {post.repostOf.content && (
+                          <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
+                            {post.repostOf.content}
                           </p>
-                        </div>
+                        )}
+
+                        {/* Original Media Grid */}
+                        {post.repostOf.media && post.repostOf.media.length > 0 && (
+                          <div className={`grid gap-2 my-2 ${post.repostOf.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {post.repostOf.media.map((med) => (
+                              <div
+                                key={med.id}
+                                className={`relative rounded-xl overflow-hidden border border-beige-200 bg-beige-50 flex items-center justify-center ${
+                                  post.repostOf!.media!.length === 1 ? 'w-full' : 'h-36 w-full'
+                                }`}
+                              >
+                                {med.type === 'VIDEO' ? (
+                                  <video
+                                    src={med.url}
+                                    controls
+                                    className={
+                                      post.repostOf!.media!.length === 1
+                                        ? 'w-full h-auto max-h-[400px] object-contain mx-auto'
+                                        : 'w-full h-full object-contain mx-auto'
+                                    }
+                                  />
+                                ) : (
+                                  <img
+                                    src={med.url}
+                                    alt="Post Attachment"
+                                    className={
+                                      post.repostOf!.media!.length === 1
+                                        ? 'w-full h-auto max-h-[400px] object-contain mx-auto'
+                                        : 'w-full h-full object-contain mx-auto'
+                                    }
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Original Event */}
+                        {post.repostOf.eventTitle && (
+                          <div className="p-3.5 bg-amber-50/30 border border-amber-200/60 rounded-xl flex items-center gap-3 my-1">
+                            <div className="w-9 h-9 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0 text-amber-500 border border-amber-200/50">
+                              <Calendar className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <h4 className="text-[11px] font-extrabold text-text-primary truncate">{post.repostOf.eventTitle}</h4>
+                              <p className="text-[9px] text-text-secondary font-bold mt-0.5">
+                                {post.repostOf.eventDate ? new Date(post.repostOf.eventDate).toLocaleString() : ''}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Render regular post content (standard post render code) */}
+                      {post.content && (
+                        <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line text-left">
+                          {post.content}
+                        </p>
+                      )}
+
+                      {/* Render Post Media (Photos/Videos) Grid */}
+                      {post.media && post.media.length > 0 && (
+                        <div className={`grid gap-2 my-2 ${post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          {post.media.map((med) => (
+                            <div
+                              key={med.id}
+                              className={`relative rounded-2xl overflow-hidden border border-beige-200 bg-beige-50 flex items-center justify-center ${
+                                post.media!.length === 1 ? 'w-full' : 'h-48 w-full'
+                              }`}
+                            >
+                              {med.type === 'VIDEO' ? (
+                                <video
+                                  src={med.url}
+                                  controls
+                                  className={
+                                    post.media!.length === 1
+                                      ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
+                                      : 'w-full h-full object-contain mx-auto'
+                                  }
+                                />
+                              ) : (
+                                <img
+                                  src={med.url}
+                                  alt="Post Attachment"
+                                  className={
+                                    post.media!.length === 1
+                                      ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
+                                      : 'w-full h-full object-contain mx-auto'
+                                  }
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Render Post Image Fallback (legacy single image posts) */}
+                      {(!post.media || post.media.length === 0) && post.imageUrl && (
+                        <div className="rounded-2xl overflow-hidden border border-beige-200 w-full bg-beige-50 my-2">
+                          <img src={post.imageUrl} alt="Post Attachment" className="w-full h-auto max-h-[500px] object-contain mx-auto" />
+                        </div>
+                      )}
+
+                      {/* Render Post Event */}
+                      {post.eventTitle && (
+                        <div className="p-4 bg-amber-50/30 border border-amber-200/60 rounded-2xl flex items-center gap-3.5 my-2">
+                          <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0 text-amber-500 border border-amber-200/50">
+                            <Calendar className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <h4 className="text-xs font-extrabold text-text-primary truncate">{post.eventTitle}</h4>
+                            <p className="text-[10px] text-text-secondary font-bold mt-1">
+                              {post.eventDate ? new Date(post.eventDate).toLocaleString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
 
                 {/* Likes / Comments / Reposts Counts */}
                 <div className="flex justify-between items-center text-[10px] text-text-secondary border-b border-beige-100/60 pb-3 font-semibold">
@@ -745,8 +860,8 @@ export default function ActivityFeed() {
                     onClick={() => handleLike(post.id)}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
                       hasLiked 
-                        ? 'text-mint-500 bg-mint-50/50' 
-                        : 'text-text-secondary hover:bg-beige-50'
+                        ? 'text-mint-500 bg-mint-500/10 dark:bg-mint-500/20' 
+                        : 'text-text-secondary hover:bg-beige-50 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <ThumbsUp className={`w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}`} />
@@ -756,19 +871,19 @@ export default function ActivityFeed() {
                     onClick={() => setActiveCommentPostId(showComments ? null : post.id)}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
                       showComments 
-                        ? 'text-indigo-500 bg-indigo-50/50' 
-                        : 'text-text-secondary hover:bg-beige-50'
+                        ? 'text-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20' 
+                        : 'text-text-secondary hover:bg-beige-50 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>{lang === 'en' ? 'Comment' : 'تعليق'}</span>
                   </button>
                   <button
-                    onClick={() => repostMutation.mutate(post.id)}
+                    onClick={() => setRepostModalPost(post)}
                     className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
                       hasReposted 
-                        ? 'text-indigo-500 bg-indigo-50/50' 
-                        : 'text-text-secondary hover:bg-beige-50'
+                        ? 'text-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20' 
+                        : 'text-text-secondary hover:bg-beige-50 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <Repeat className="w-3.5 h-3.5" />
@@ -776,7 +891,7 @@ export default function ActivityFeed() {
                   </button>
                   <button
                     onClick={() => handleShare(post.id)}
-                    className="flex items-center justify-center gap-1.5 py-2 text-text-secondary hover:bg-beige-50 rounded-xl transition-all"
+                    className="flex items-center justify-center gap-1.5 py-2 text-text-secondary hover:bg-beige-50 dark:hover:bg-neutral-800 rounded-xl transition-all"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     <span>{lang === 'en' ? 'Share' : 'مشاركة'}</span>
@@ -899,6 +1014,70 @@ export default function ActivityFeed() {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Repost Options Modal */}
+      {repostModalPost && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in text-left">
+          <div className="bg-white rounded-3xl border border-beige-200 max-w-lg w-full p-5 shadow-2xl relative space-y-4">
+            <button
+              onClick={() => {
+                setRepostModalPost(null);
+                setRepostCommentText('');
+              }}
+              className="absolute top-4 right-4 text-text-secondary hover:text-rose-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-sm font-extrabold text-text-primary">
+              {lang === 'en' ? 'Repost Post' : 'إعادة نشر المشاركة'}
+            </h3>
+
+            {/* Comment Area */}
+            <textarea
+              value={repostCommentText}
+              onChange={(e) => setRepostCommentText(e.target.value)}
+              placeholder={lang === 'en' ? 'Add a comment / quote...' : 'أضف تعليقاً / اقتباساً...'}
+              className="w-full px-4 py-3 bg-beige-50/50 border border-beige-200 rounded-2xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all resize-none"
+              rows={3}
+            />
+
+            {/* Nested Original Post Preview snippet */}
+            <div className="bg-beige-50/50 p-3 rounded-2xl border border-beige-200/80 text-left text-xs text-text-secondary space-y-1 max-h-40 overflow-y-auto">
+              <div className="font-extrabold text-text-primary text-[11px] flex items-center gap-1.5">
+                <span>{repostModalPost.author.name}</span>
+                <span className="px-1.5 py-0.2 text-[8px] bg-beige-200 rounded text-text-secondary">{repostModalPost.author.role}</span>
+              </div>
+              <p className="line-clamp-3 font-medium text-[11px] leading-relaxed">
+                {repostModalPost.content || (lang === 'en' ? '[Attachment]' : '[مرفق]')}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  repostMutation.mutate({ postId: repostModalPost.id });
+                }}
+                disabled={repostMutation.isPending}
+                className="px-4 py-2 border border-beige-200 hover:bg-beige-50 rounded-xl text-xs font-bold text-text-secondary transition-all"
+              >
+                {lang === 'en' ? 'Repost' : 'إعادة نشر'}
+              </button>
+              <button
+                onClick={() => {
+                  if (repostCommentText.trim()) {
+                    repostMutation.mutate({ postId: repostModalPost.id, content: repostCommentText });
+                  }
+                }}
+                disabled={repostMutation.isPending || !repostCommentText.trim()}
+                className="px-4 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 shadow-soft"
+              >
+                {repostMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{lang === 'en' ? 'Repost with comment' : 'إعادة نشر مع تعليق'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

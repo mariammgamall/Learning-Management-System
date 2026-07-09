@@ -284,6 +284,8 @@ router.post('/:id/repost', authGuard, async (req: AuthenticatedRequest, res: Res
   try {
     const postId = req.params.id;
     const userId = req.user!.id;
+    const { content } = req.body;
+    const isQuotePost = typeof content === 'string' && content.trim().length > 0;
 
     // Check if original post exists
     const originalPost = await prisma.post.findUnique({
@@ -294,26 +296,29 @@ router.post('/:id/repost', authGuard, async (req: AuthenticatedRequest, res: Res
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // Check if user already reposted this post
-    const existingRepost = await prisma.post.findFirst({
-      where: {
-        authorId: userId,
-        repostOfId: postId,
-      },
-    });
-
-    if (existingRepost) {
-      // If already reposted, we undo/remove the repost
-      await prisma.post.delete({
-        where: { id: existingRepost.id },
+    // Check if user already reposted this post (only for standard toggle)
+    if (!isQuotePost) {
+      const existingRepost = await prisma.post.findFirst({
+        where: {
+          authorId: userId,
+          repostOfId: postId,
+          content: '',
+        },
       });
-      return res.status(200).json({ message: 'Repost removed', reposted: false, repostId: existingRepost.id });
+
+      if (existingRepost) {
+        // If already reposted, we undo/remove the repost
+        await prisma.post.delete({
+          where: { id: existingRepost.id },
+        });
+        return res.status(200).json({ message: 'Repost removed', reposted: false, repostId: existingRepost.id });
+      }
     }
 
-    // Create a new repost
+    // Create a new repost (standard or quote)
     const repost = await prisma.post.create({
       data: {
-        content: '',
+        content: isQuotePost ? content.trim() : '',
         authorId: userId,
         repostOfId: postId,
       },
@@ -348,6 +353,102 @@ router.post('/:id/repost', authGuard, async (req: AuthenticatedRequest, res: Res
     return res.status(201).json({ message: 'Reposted successfully', reposted: true, repost });
   } catch (error) {
     console.error('Repost error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   PUT /api/v1/posts/:id
+// @desc    Edit post content
+router.put('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Content cannot be empty' });
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: {
+        content: content.trim(),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            profilePhoto: true,
+          },
+        },
+        likes: { select: { id: true } },
+        savedBy: { select: { id: true } },
+        comments: true,
+        media: true,
+        repostOf: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                role: true,
+                profilePhoto: true,
+              },
+            },
+            media: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json(updatedPost);
+  } catch (error) {
+    console.error('Edit post error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   DELETE /api/v1/posts/:id
+// @desc    Delete post
+router.delete('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Only author or admin can delete
+    if (post.authorId !== userId && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await prisma.post.delete({
+      where: { id: postId },
+    });
+
+    return res.status(200).json({ message: 'Post deleted successfully', postId });
+  } catch (error) {
+    console.error('Delete post error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
