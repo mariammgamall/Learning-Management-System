@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const { t, lang } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<'info' | 'transcript' | 'career'>('info');
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [interests, setInterests] = useState(user?.interests || '');
@@ -566,7 +567,7 @@ export default function ProfilePage() {
 
       {activeTab === 'transcript' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="flex justify-between items-center bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft">
+          <div className="flex justify-between items-center bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft flex-wrap gap-4">
             <div>
               <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                 {lang === 'en' ? 'Official Academic Transcript' : 'بيان الدرجات الأكاديمي الرسمي'}
@@ -574,6 +575,30 @@ export default function ProfilePage() {
               <p className="text-[10px] text-text-secondary mt-0.5">
                 {lang === 'en' ? 'View and download your official academic records and grade matrices.' : 'عرض وتحميل سجلاتك الأكاديمية الرسمية ونقاط الدرجات.'}
               </p>
+              
+              {/* Year Filtering Select Button */}
+              {reportData && reportData.length > 0 && (
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-[10px] font-bold text-text-secondary uppercase">
+                    {lang === 'en' ? 'Select Academic Year:' : 'اختر العام الأكاديمي:'}
+                  </span>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                    className="px-3 py-1.5 bg-beige-50 border border-beige-200 rounded-xl text-[10px] font-extrabold text-text-primary focus:outline-none focus:ring-1 focus:ring-mint-500 cursor-pointer shadow-soft"
+                  >
+                    <option value="all">{lang === 'en' ? 'All Registered Years' : 'جميع الأعوام المسجلة'}</option>
+                    {Object.keys(coursesByYear)
+                      .map(Number)
+                      .sort((a, b) => b - a)
+                      .map((y) => (
+                        <option key={y} value={y}>
+                          {lang === 'en' ? `Academic Year ${y}` : `العام الدراسي ${y}`}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
             </div>
             {reportData && reportData.length > 0 && (
               <button
@@ -597,10 +622,13 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-8">
-              {Object.keys(coursesByYear).sort((a, b) => Number(b) - Number(a)).map((yearStr) => {
-                const year = Number(yearStr);
-                const enrollments = coursesByYear[year];
-                return (
+              {Object.keys(coursesByYear)
+                .map(Number)
+                .sort((a, b) => b - a)
+                .filter((y) => selectedYear === 'all' || y === selectedYear)
+                .map((year) => {
+                  const enrollments = coursesByYear[year];
+                  return (
                   <div key={year} className="bg-white p-6 rounded-3xl border border-beige-200/80 shadow-premium space-y-4">
                     <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider border-b border-beige-100 pb-2 flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-mint-500" /> {lang === 'en' ? `Academic Year ${year}` : `العام الدراسي ${year}`}

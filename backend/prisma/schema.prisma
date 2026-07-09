@@ -32,6 +32,8 @@ model User {
   comments          Comment[]
   announcements     Announcement[]
   publishedLectures Lecture[]
+  posts             Post[]
+  likedPosts        Post[]           @relation("UserLikesPost")
 }
 
 model Course {
@@ -262,4 +264,16 @@ model Comment {
   parentId       String?
   parent         Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies        Comment[]     @relation("CommentReplies")
+  postId         String?
+  post           Post?         @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  content   String
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  likes     User[]    @relation("UserLikesPost")
+  comments  Comment[]
 }

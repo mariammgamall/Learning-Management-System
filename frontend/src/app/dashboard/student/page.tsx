@@ -7,6 +7,7 @@ import { BookOpen, Calendar, BookOpenCheck, Award, ChevronRight, Play, Flame, Za
 import Link from 'next/link';
 import { useTranslation } from '../../../hooks/useTranslation';
 import ModalPortal from '@/components/ModalPortal';
+import ActivityFeed from '@/components/ActivityFeed';
 
 export default function StudentDashboard() {
   const { t, lang } = useTranslation();
@@ -196,6 +197,14 @@ export default function StudentDashboard() {
               ))}
             </div>
           )}
+
+          {/* LinkedIn/Facebook Style Activity Feed */}
+          <div className="space-y-4 pt-6">
+            <h3 className="text-base font-bold text-text-primary">
+              {lang === 'en' ? 'Student Hub Activity Feed' : 'منصة الأنشطة والتفاعل الطلابي'}
+            </h3>
+            <ActivityFeed />
+          </div>
         </div>
 
         {/* Gamification, Streaks & Achievements Hub */}
