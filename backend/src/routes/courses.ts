@@ -149,12 +149,45 @@ router.get('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) =
       include: {
         doctor: { select: { id: true, name: true, email: true } },
         tas: { include: { ta: { select: { id: true, name: true, email: true } } } },
+        announcements: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            publisher: { select: { id: true, name: true, role: true } },
+            comments: {
+              where: { parentId: null },
+              orderBy: { createdAt: 'asc' },
+              include: {
+                user: { select: { id: true, name: true, role: true, profilePhoto: true } },
+                replies: {
+                  orderBy: { createdAt: 'asc' },
+                  include: {
+                    user: { select: { id: true, name: true, role: true, profilePhoto: true } }
+                  }
+                }
+              }
+            }
+          }
+        },
         lectures: {
           orderBy: [{ weekNumber: 'asc' }, { createdAt: 'asc' }],
           include: {
             watchedBy: {
               where: { studentId: user.id },
             },
+            publisher: { select: { id: true, name: true, role: true } },
+            comments: {
+              where: { parentId: null },
+              orderBy: { createdAt: 'asc' },
+              include: {
+                user: { select: { id: true, name: true, role: true, profilePhoto: true } },
+                replies: {
+                  orderBy: { createdAt: 'asc' },
+                  include: {
+                    user: { select: { id: true, name: true, role: true, profilePhoto: true } }
+                  }
+                }
+              }
+            }
           },
         },
         assignments: {
@@ -190,6 +223,28 @@ router.get('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) =
 
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Filter private comments for students
+    if (user.role === Role.STUDENT) {
+      if (course.announcements) {
+        course.announcements.forEach((ann: any) => {
+          if (ann.comments) {
+            ann.comments = ann.comments.filter((c: any) => {
+              return !c.isPrivate || c.userId === user.id;
+            });
+          }
+        });
+      }
+      if (course.lectures) {
+        course.lectures.forEach((lec: any) => {
+          if (lec.comments) {
+            lec.comments = lec.comments.filter((c: any) => {
+              return !c.isPrivate || c.userId === user.id;
+            });
+          }
+        });
+      }
     }
 
     return res.status(200).json(course);
@@ -645,6 +700,143 @@ router.post('/attendance/checkin', authGuard, roleGuard(Role.STUDENT), async (re
     });
   } catch (error) {
     console.error('Attendance check-in error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   POST /api/v1/courses/:id/announcements
+// @desc    Post an announcement (Admin, Doctor, or TA only)
+router.post('/:id/announcements', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user!;
+    const { content } = req.body;
+
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    const course = await prisma.course.findUnique({ where: { id } });
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Role checks
+    if (user.role === Role.DOCTOR && course.doctorId !== user.id) {
+      return res.status(403).json({ message: 'Not authorized for this course' });
+    } else if (user.role === Role.TA) {
+      const isAssigned = await prisma.courseTA.findUnique({
+        where: { courseId_userId: { courseId: id, userId: user.id } },
+      });
+      if (!isAssigned) {
+        return res.status(403).json({ message: 'You are not assigned to this course as a TA' });
+      }
+    } else if (user.role !== Role.ADMIN && user.role !== Role.DOCTOR && user.role !== Role.TA) {
+      return res.status(403).json({ message: 'Unauthorized announcement post' });
+    }
+
+    const announcement = await prisma.announcement.create({
+      data: {
+        courseId: id,
+        content,
+        publisherId: user.id,
+      },
+      include: {
+        publisher: { select: { id: true, name: true, role: true } },
+        comments: {
+          include: {
+            user: { select: { id: true, name: true, role: true, profilePhoto: true } }
+          }
+        }
+      }
+    });
+
+    // Notify enrolled students
+    const enrollments = await prisma.enrollment.findMany({ where: { courseId: id } });
+    await prisma.notification.createMany({
+      data: enrollments.map((e) => ({
+        userId: e.studentId,
+        message: `New Announcement in ${course.code} by ${user.name}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+      })),
+    });
+
+    return res.status(201).json(announcement);
+  } catch (error) {
+    console.error('Create announcement error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   POST /api/v1/courses/:id/comments
+// @desc    Add a comment to an announcement or a lecture (All active course users)
+router.post('/:id/comments', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user!;
+    const { content, lectureId, announcementId, isPrivate, parentId } = req.body;
+
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    if (!lectureId && !announcementId) {
+      return res.status(400).json({ message: 'lectureId or announcementId must be specified' });
+    }
+
+    // Verify course permissions
+    if (user.role === Role.STUDENT) {
+      const isEnrolled = await prisma.enrollment.findUnique({
+        where: { studentId_courseId: { studentId: user.id, courseId: id } },
+      });
+      if (!isEnrolled) {
+        return res.status(403).json({ message: 'You are not enrolled in this course' });
+      }
+    } else if (user.role === Role.TA) {
+      const isAssigned = await prisma.courseTA.findUnique({
+        where: { courseId_userId: { courseId: id, userId: user.id } },
+      });
+      if (!isAssigned) {
+        return res.status(403).json({ message: 'You are not assigned to this course' });
+      }
+    } else if (user.role === Role.DOCTOR) {
+      const course = await prisma.course.findUnique({ where: { id } });
+      if (course?.doctorId !== user.id) {
+        return res.status(403).json({ message: 'Not authorized for this course' });
+      }
+    }
+
+    let resolvedIsPrivate = !!isPrivate;
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId }
+      });
+      if (parentComment && parentComment.isPrivate) {
+        resolvedIsPrivate = true;
+      }
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        content,
+        userId: user.id,
+        lectureId: lectureId || undefined,
+        announcementId: announcementId || undefined,
+        isPrivate: resolvedIsPrivate,
+        parentId: parentId || undefined,
+      },
+      include: {
+        user: { select: { id: true, name: true, role: true, profilePhoto: true } },
+        replies: {
+          include: {
+            user: { select: { id: true, name: true, role: true, profilePhoto: true } }
+          }
+        }
+      }
+    });
+
+    return res.status(201).json(comment);
+  } catch (error) {
+    console.error('Create comment error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

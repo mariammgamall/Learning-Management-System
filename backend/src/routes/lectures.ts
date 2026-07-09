@@ -59,6 +59,7 @@ router.post('/', authGuard, upload.single('file'), async (req: AuthenticatedRequ
         fileUrl,
         fileType: parsedData.fileType,
         allowDownload: parsedData.allowDownload,
+        publisherId: user.id,
       },
     });
 

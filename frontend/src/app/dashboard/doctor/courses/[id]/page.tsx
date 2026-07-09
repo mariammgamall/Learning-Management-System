@@ -27,16 +27,201 @@ import {
   AlertCircle,
   Paperclip,
   Eye,
+  Bell,
+  MessageSquare,
+  Send,
+  CornerDownRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import ModalPortal from '@/components/ModalPortal';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuthStore } from '@/hooks/useAuthStore';
+
+// CommentsThread component for rendering discussions
+const CommentsThread = ({
+  comments = [],
+  onAddComment,
+  currentUser,
+  placeholder = "Add a comment...",
+  showPrivateOption = false,
+}: {
+  comments: any[];
+  onAddComment: (content: string, isPrivate: boolean, parentId?: string) => void;
+  currentUser: any;
+  placeholder?: string;
+  showPrivateOption?: boolean;
+}) => {
+  const [newComment, setNewComment] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const { lang } = useTranslation();
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    onAddComment(newComment, isPrivate);
+    setNewComment('');
+    setIsPrivate(false);
+  };
+
+  const handleSubmitReply = (parentId: string) => {
+    if (!replyContent.trim()) return;
+    onAddComment(replyContent, false, parentId);
+    setReplyContent('');
+    setReplyingToId(null);
+  };
+
+  return (
+    <div className="space-y-4 mt-4 pt-4 border-t border-beige-100">
+      <h5 className="text-[11px] font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+        <MessageSquare className="w-3.5 h-3.5" /> {lang === 'en' ? 'Comments' : 'التعليقات'} ({comments.length})
+      </h5>
+
+      {/* Comment Input */}
+      <form onSubmit={handleSubmitComment} className="space-y-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="flex-1 px-3 py-2 text-xs border border-beige-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-mint-500 bg-beige-50/50 text-text-primary font-medium"
+          />
+          <button
+            type="submit"
+            className="p-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl transition-all"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {showPrivateOption && currentUser?.role === 'STUDENT' && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="private-comment-checkbox"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="w-3.5 h-3.5 text-mint-500 border-beige-300 rounded focus:ring-mint-500"
+            />
+            <label htmlFor="private-comment-checkbox" className="text-[10px] text-text-secondary font-semibold cursor-pointer flex items-center gap-1">
+              <Lock className="w-3 h-3 text-amber-500" /> {lang === 'en' ? 'Post comment privately to instructors' : 'نشر التعليق بشكل خاص للمحاضرين'}
+            </label>
+          </div>
+        )}
+      </form>
+
+      {/* Comments List */}
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+        {comments.map((comment) => (
+          <div key={comment.id} className="p-3 bg-beige-50/50 rounded-xl border border-beige-200 space-y-2">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-mint-100 text-mint-500 rounded-lg flex items-center justify-center font-bold text-[10px]">
+                  {comment.user?.name?.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-xs text-text-primary">{comment.user?.name}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                      comment.user?.role === 'DOCTOR' ? 'bg-indigo-100 text-indigo-600' :
+                      comment.user?.role === 'TA' ? 'bg-mint-100 text-mint-600' :
+                      'bg-beige-200 text-text-secondary'
+                    }`}>
+                      {comment.user?.role}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-text-secondary/80">
+                    {new Date(comment.createdAt).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              {comment.isPrivate && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-md text-[8.5px] font-black uppercase tracking-wider">
+                  <Lock className="w-2.5 h-2.5" /> {lang === 'en' ? 'Private' : 'خاص'}
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-text-primary pl-8 leading-relaxed whitespace-pre-wrap font-medium">{comment.content}</p>
+
+            {/* Replies List */}
+            {comment.replies && comment.replies.length > 0 && (
+              <div className="pl-8 pt-2 space-y-2 border-t border-beige-100/50">
+                {comment.replies.map((reply: any) => (
+                  <div key={reply.id} className="flex gap-2 items-start text-xs bg-white p-2 rounded-lg border border-beige-100">
+                    <CornerDownRight className="w-3.5 h-3.5 text-beige-300 mt-1 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-[11px] text-text-primary">{reply.user?.name}</span>
+                        <span className={`px-1 py-0.2 rounded text-[7.5px] font-black uppercase tracking-wider ${
+                          reply.user?.role === 'DOCTOR' ? 'bg-indigo-100 text-indigo-600' :
+                          reply.user?.role === 'TA' ? 'bg-mint-100 text-mint-600' :
+                          'bg-beige-200 text-text-secondary'
+                        }`}>
+                          {reply.user?.role}
+                        </span>
+                        <span className="text-[8px] text-text-secondary/60">
+                          {new Date(reply.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-text-primary text-xs mt-1 leading-relaxed whitespace-pre-wrap font-medium">{reply.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Reply Input */}
+            <div className="pl-8 flex justify-end">
+              {replyingToId === comment.id ? (
+                <div className="flex-1 flex gap-2 items-center mt-2 animate-fade-in">
+                  <input
+                    type="text"
+                    placeholder={lang === 'en' ? "Write a reply..." : "اكتب رداً..."}
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    className="flex-1 px-2.5 py-1 text-xs border border-beige-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary"
+                  />
+                  <button
+                    onClick={() => handleSubmitReply(comment.id)}
+                    className="px-2.5 py-1 bg-mint-500 text-white rounded-lg text-xs font-bold"
+                  >
+                    {lang === 'en' ? 'Reply' : 'رد'}
+                  </button>
+                  <button
+                    onClick={() => { setReplyingToId(null); setReplyContent(''); }}
+                    className="text-[10px] text-text-secondary font-bold hover:underline"
+                  >
+                    {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setReplyingToId(comment.id)}
+                  className="text-[10px] font-bold text-mint-500 hover:text-mint-400 flex items-center gap-1"
+                >
+                  <CornerDownRight className="w-3 h-3" /> {lang === 'en' ? 'Reply' : 'رد'}
+                </button>
+              )}
+            </div>
+
+          </div>
+        ))}
+        {comments.length === 0 && (
+          <p className="text-[10px] text-text-secondary italic text-center py-2">{lang === 'en' ? 'No comments posted yet.' : 'لا توجد تعليقات منشورة بعد.'}</p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function DoctorCourseWorkspace() {
   const params = useParams();
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { t, lang } = useTranslation();
+  const { user } = useAuthStore();
   const courseId = params.id as string;
 
   const dxt = (key: string) => {
@@ -107,7 +292,8 @@ export default function DoctorCourseWorkspace() {
     return key;
   };
 
-  const [activeTab, setActiveTab] = useState<'lectures' | 'assignments' | 'quizzes' | 'students' | 'attendance'>('lectures');
+  const [activeTab, setActiveTab] = useState<'announcements' | 'lectures' | 'assignments' | 'quizzes' | 'students' | 'attendance'>('lectures');
+  const [viewingLectureComments, setViewingLectureComments] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -360,6 +546,48 @@ export default function DoctorCourseWorkspace() {
     },
   });
 
+  // Comment posting mutation
+  const createCommentMutation = useMutation({
+    mutationFn: async ({ content, isPrivate, parentId, lectureId, announcementId }: {
+      content: string;
+      isPrivate: boolean;
+      parentId?: string;
+      lectureId?: string;
+      announcementId?: string;
+    }) => {
+      const response = await api.post(`/courses/${courseId}/comments`, {
+        content,
+        isPrivate,
+        parentId,
+        lectureId,
+        announcementId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['doctorCourseDetails', courseId] });
+      addToast(lang === 'en' ? 'Comment posted successfully!' : 'تم نشر التعليق بنجاح!', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to post comment', 'error');
+    }
+  });
+
+  // Announcement posting mutation
+  const postAnnouncementMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await api.post(`/courses/${courseId}/announcements`, { content });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['doctorCourseDetails', courseId] });
+      addToast(lang === 'en' ? 'Announcement posted successfully!' : 'تم نشر الإعلان بنجاح!', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to post announcement', 'error');
+    }
+  });
+
   // 9. Grade Quiz Manual Attempt
   const gradeQuizAttemptMutation = useMutation({
     mutationFn: async ({ attemptId, score }: { attemptId: string; score: number }) => {
@@ -467,6 +695,7 @@ export default function DoctorCourseWorkspace() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-beige-200 pb-px overflow-x-auto whitespace-nowrap scrollbar-none md:flex-wrap md:overflow-x-visible">
         {[
+          { id: 'announcements', label: lang === 'en' ? 'Announcements' : 'الإعلانات', icon: Bell },
           { id: 'lectures', label: lang === 'en' ? 'Lectures Uploads' : 'رفع المحاضرات', icon: Video },
           { id: 'assignments', label: lang === 'en' ? 'Assignments Locker' : 'خزانة التكليفات', icon: FileText },
           { id: 'quizzes', label: lang === 'en' ? 'Quizzes Builder' : 'منشئ الاختبارات', icon: HelpCircle },
@@ -498,6 +727,100 @@ export default function DoctorCourseWorkspace() {
         {/* Main Panel Content */}
         <div className="lg:col-span-2 space-y-6">
           
+          {/* TAB: Announcements Management */}
+          {activeTab === 'announcements' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="bg-white p-5 rounded-2xl border border-beige-200 shadow-soft space-y-4">
+                <h3 className="text-xs font-bold text-text-primary uppercase tracking-widest border-b border-beige-100 pb-2 flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-mint-500" /> {lang === 'en' ? 'Post New Course Announcement' : 'نشر إعلان جديد للمقرر'}
+                </h3>
+                
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const content = (e.target as any).announcementContent.value;
+                    if (!content.trim()) return;
+                    postAnnouncementMutation.mutate(content, {
+                      onSuccess: () => {
+                        (e.target as any).announcementContent.value = '';
+                      }
+                    });
+                  }}
+                  className="space-y-3"
+                >
+                  <textarea
+                    name="announcementContent"
+                    rows={3}
+                    placeholder={lang === 'en' ? "Write important announcement details here..." : "اكتب تفاصيل الإعلان الهامة هنا..."}
+                    className="w-full px-3 py-2 text-xs border border-beige-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-mint-500 bg-beige-50/50 text-text-primary font-medium"
+                    required
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={postAnnouncementMutation.isPending}
+                      className="px-5 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all disabled:opacity-75"
+                    >
+                      {postAnnouncementMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (lang === 'en' ? 'Post Announcement' : 'نشر الإعلان')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {(!course.announcements || course.announcements.length === 0) ? (
+                <div className="p-8 text-center bg-white rounded-2xl border border-beige-200 text-text-secondary text-xs">
+                  {lang === 'en' ? 'No announcements have been posted yet.' : 'لم يتم نشر إعلانات بعد.'}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {course.announcements.map((ann: any) => (
+                    <div key={ann.id} className="bg-white p-5 rounded-2xl border border-beige-200 space-y-4 shadow-soft">
+                      <div className="flex justify-between items-center border-b border-beige-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-mint-500 text-white rounded-xl flex items-center justify-center font-bold text-xs shadow-soft">
+                            {ann.publisher?.name?.charAt(0) || 'A'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-xs text-text-primary">{ann.publisher?.name}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                ann.publisher?.role === 'DOCTOR' ? 'bg-indigo-100 text-indigo-600' :
+                                ann.publisher?.role === 'TA' ? 'bg-mint-100 text-mint-600' :
+                                'bg-beige-200 text-text-secondary'
+                              }`}>
+                                {ann.publisher?.role}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-text-secondary">
+                              {new Date(ann.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-text-primary leading-relaxed whitespace-pre-wrap font-medium">{ann.content}</p>
+
+                      <CommentsThread
+                        comments={ann.comments || []}
+                        onAddComment={(content, isPrivate, parentId) => {
+                          createCommentMutation.mutate({
+                            content,
+                            isPrivate,
+                            parentId,
+                            announcementId: ann.id,
+                          });
+                        }}
+                        currentUser={user}
+                        placeholder={lang === 'en' ? "Write a comment..." : "اكتب تعليقاً..."}
+                        showPrivateOption={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 1: Lectures Management */}
           {activeTab === 'lectures' && (
             <div className="space-y-4">
@@ -525,10 +848,27 @@ export default function DoctorCourseWorkspace() {
                       <div>
                         <span className="text-[9px] font-bold text-mint-500">WEEK {lecture.weekNumber}</span>
                         <h4 className="font-bold text-text-primary text-xs">{lecture.title}</h4>
-                        <span className="text-[9px] text-text-secondary uppercase">{lecture.fileType}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 text-[9px] text-text-secondary uppercase">
+                          <span>{lecture.fileType}</span>
+                          <span>•</span>
+                          <span>
+                            {lang === 'en' ? 'Uploaded by: ' : 'تم الرفع بواسطة: '}
+                            <strong>{lecture.publisher?.name || course.doctor?.name || 'Dr. Ahmed Hagag'}</strong>
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setViewingLectureComments(lecture)}
+                          className="p-2 rounded-lg border border-beige-200 text-text-secondary hover:bg-beige-100 hover:text-mint-500 flex items-center gap-1 text-[11px] font-bold transition-all"
+                          title={lang === 'en' ? "View Discussions" : "عرض المناقشات"}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>({lecture.comments?.length || 0})</span>
+                        </button>
+
                         <button
                           onClick={() => toggleDownloadMutation.mutate({ id: lecture.id, allow: !lecture.allowDownload })}
                           className={`p-2 rounded-lg border transition-all ${
@@ -546,7 +886,7 @@ export default function DoctorCourseWorkspace() {
                           target="_blank"
                           className="px-3.5 py-1.5 bg-beige-100 text-text-primary hover:bg-beige-200 rounded-lg text-xs font-bold transition-all"
                         >
-                          View File
+                          {lang === 'en' ? 'View File' : 'عرض الملف'}
                         </a>
                       </div>
                     </div>
@@ -1601,6 +1941,45 @@ export default function DoctorCourseWorkspace() {
               
               <div className="px-4 py-2 bg-beige-100 border border-beige-200 text-text-primary rounded-xl font-black text-xs tracking-wider shadow-inner">
                 CODE: {activeSession?.code}
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {/* DISCUSSION BOARD MODAL */}
+      {viewingLectureComments && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-premium border border-beige-200 animate-slide-up space-y-4 text-text-primary">
+              <div className="flex justify-between items-center border-b border-beige-100 pb-2">
+                <div>
+                  <span className="text-[9px] font-bold text-mint-500 uppercase">{lang === 'en' ? 'Lecture Discussion Board' : 'لوحة مناقشة المحاضرة'}</span>
+                  <h3 className="text-xs font-bold text-text-primary">{viewingLectureComments.title}</h3>
+                </div>
+                <button
+                  onClick={() => setViewingLectureComments(null)}
+                  className="text-text-secondary hover:text-text-primary p-1 bg-beige-100 hover:bg-beige-200 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto pr-1">
+                <CommentsThread
+                  comments={course.lectures.find((l: any) => l.id === viewingLectureComments.id)?.comments || []}
+                  onAddComment={(content, isPrivate, parentId) => {
+                    createCommentMutation.mutate({
+                      content,
+                      isPrivate,
+                      parentId,
+                      lectureId: viewingLectureComments.id,
+                    });
+                  }}
+                  currentUser={user}
+                  placeholder={lang === 'en' ? "Write a response or feedback..." : "اكتب رداً أو تعليقاً..."}
+                  showPrivateOption={false}
+                />
               </div>
             </div>
           </div>

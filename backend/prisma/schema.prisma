@@ -28,6 +28,9 @@ model User {
   notifications Notification[]
   watched       WatchedLecture[]
   attendances   Attendance[]
+  comments          Comment[]
+  announcements     Announcement[]
+  publishedLectures Lecture[]
 }
 
 model Course {
@@ -51,6 +54,7 @@ model Course {
   attendances        Attendance[]
   meetings           Meeting[]
   attendanceSessions AttendanceSession[]
+  announcements      Announcement[]
 }
 
 model Enrollment {
@@ -84,9 +88,12 @@ model Lecture {
   fileType      String           // VIDEO, PDF, SLIDES, OTHER
   allowDownload Boolean          @default(true)
   createdAt     DateTime         @default(now())
+  publisherId   String?
+  publisher     User?            @relation(fields: [publisherId], references: [id])
 
   // Relations
   watchedBy     WatchedLecture[]
+  comments      Comment[]
 }
 
 model WatchedLecture {
@@ -227,4 +234,31 @@ model AttendanceSession {
   code      String   @unique
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id            String    @id @default(uuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content       String
+  publisherId   String
+  publisher     User      @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  comments      Comment[]
+}
+
+model Comment {
+  id             String        @id @default(uuid())
+  content        String
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  lectureId      String?
+  lecture        Lecture?      @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  announcementId String?
+  announcement   Announcement? @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  isPrivate      Boolean       @default(false)
+  parentId       String?
+  parent         Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies        Comment[]     @relation("CommentReplies")
 }
