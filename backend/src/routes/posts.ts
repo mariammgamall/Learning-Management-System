@@ -54,6 +54,7 @@ router.get('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
             },
           },
         },
+        media: true,
       },
     });
 
@@ -66,27 +67,35 @@ router.get('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
 
 // @route   POST /api/v1/posts
 // @desc    Create a new feed post
-router.post('/', authGuard, upload.single('photo'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authGuard, upload.array('media', 10), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { content, eventTitle, eventDate } = req.body;
+    const files = req.files as Express.Multer.File[] | undefined;
     
-    // Check if the post is completely empty (no text, no photo, and no event)
-    if ((!content || !content.trim()) && !req.file && !eventTitle) {
-      return res.status(400).json({ message: 'Post content, photo, or event title is required' });
+    // Check if the post is completely empty (no text, no files, and no event)
+    if ((!content || !content.trim()) && (!files || files.length === 0) && !eventTitle) {
+      return res.status(400).json({ message: 'Post content, media files, or event title is required' });
     }
 
-    let imageUrl = null;
-    if (req.file) {
-      imageUrl = await uploadToCloudinaryOrLocal(req.file, 'posts');
+    const mediaData: { url: string; type: string }[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const url = await uploadToCloudinaryOrLocal(file, 'posts');
+        const type = file.mimetype.startsWith('video/') ? 'VIDEO' : 'PHOTO';
+        mediaData.push({ url, type });
+      }
     }
 
     const newPost = await prisma.post.create({
       data: {
         content: content ? content.trim() : '',
         authorId: req.user!.id,
-        imageUrl,
+        imageUrl: mediaData.length > 0 ? mediaData[0].url : null, // Set for backwards compatibility
         eventTitle: eventTitle || null,
         eventDate: eventDate ? new Date(eventDate) : null,
+        media: {
+          create: mediaData,
+        },
       },
       include: {
         author: {
@@ -99,6 +108,7 @@ router.post('/', authGuard, upload.single('photo'), async (req: AuthenticatedReq
         },
         likes: { select: { id: true } },
         comments: true,
+        media: true,
       },
     });
 

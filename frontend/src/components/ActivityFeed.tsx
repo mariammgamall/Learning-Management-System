@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   Share2,
   X,
+  Video as VideoIcon,
 } from 'lucide-react';
 
 interface Author {
@@ -42,6 +43,12 @@ interface Comment {
   replies: Reply[];
 }
 
+interface PostMedia {
+  id: string;
+  url: string;
+  type: 'PHOTO' | 'VIDEO';
+}
+
 interface Post {
   id: string;
   content: string;
@@ -52,6 +59,7 @@ interface Post {
   author: Author;
   likes: { id: string }[];
   comments: Comment[];
+  media?: PostMedia[];
 }
 
 export default function ActivityFeed() {
@@ -66,9 +74,8 @@ export default function ActivityFeed() {
   const [replyInputs, setReplyInputs] = useState<{ [commentId: string]: string }>({});
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
 
-  // Photo upload and Event state
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  // Media upload and Event state
+  const [selectedMedia, setSelectedMedia] = useState<{ file: File; type: 'PHOTO' | 'VIDEO'; previewUrl: string }[]>([]);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [showEventInputs, setShowEventInputs] = useState(false);
@@ -92,8 +99,10 @@ export default function ActivityFeed() {
     },
     onSuccess: () => {
       setPostContent('');
-      setSelectedPhoto(null);
-      setPhotoPreviewUrl(null);
+      selectedMedia.forEach((mediaItem) => {
+        URL.revokeObjectURL(mediaItem.previewUrl);
+      });
+      setSelectedMedia([]);
       setEventTitle('');
       setEventDate('');
       setShowEventInputs(false);
@@ -157,12 +166,14 @@ export default function ActivityFeed() {
 
   const handleCreatePost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!postContent.trim() && !selectedPhoto && !eventTitle) return;
+    if (!postContent.trim() && selectedMedia.length === 0 && !eventTitle) return;
 
     const formData = new FormData();
     formData.append('content', postContent.trim());
-    if (selectedPhoto) {
-      formData.append('photo', selectedPhoto);
+    if (selectedMedia.length > 0) {
+      selectedMedia.forEach((item) => {
+        formData.append('media', item.file);
+      });
     }
     if (showEventInputs && eventTitle) {
       formData.append('eventTitle', eventTitle.trim());
@@ -221,20 +232,31 @@ export default function ActivityFeed() {
             />
           </div>
 
-          {/* Image Upload Preview */}
-          {photoPreviewUrl && (
-            <div className="relative w-full border border-beige-200 rounded-2xl my-2 bg-beige-50 overflow-hidden">
-              <img src={photoPreviewUrl} alt="Upload preview" className="w-full h-auto max-h-60 object-contain mx-auto" />
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPhoto(null);
-                  setPhotoPreviewUrl(null);
-                }}
-                className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {/* Multiple Media Upload Preview Grid */}
+          {selectedMedia.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2 border border-beige-200 p-3 rounded-2xl bg-beige-50/50 max-h-80 overflow-y-auto">
+              {selectedMedia.map((mediaItem, idx) => (
+                <div key={idx} className="relative rounded-xl overflow-hidden border border-beige-200 bg-white h-24 flex items-center justify-center">
+                  {mediaItem.type === 'VIDEO' ? (
+                    <video src={mediaItem.previewUrl} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={mediaItem.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      URL.revokeObjectURL(mediaItem.previewUrl);
+                      setSelectedMedia((prev) => prev.filter((_, i) => i !== idx));
+                    }}
+                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-[7px] text-white rounded font-bold uppercase tracking-wider">
+                    {mediaItem.type}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 
@@ -291,12 +313,17 @@ export default function ActivityFeed() {
                 type="file"
                 id="post-photo-input"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setSelectedPhoto(file);
-                    setPhotoPreviewUrl(URL.createObjectURL(file));
+                  const files = e.target.files;
+                  if (files) {
+                    const newMedia = Array.from(files).map((file) => ({
+                      file,
+                      type: 'PHOTO' as const,
+                      previewUrl: URL.createObjectURL(file),
+                    }));
+                    setSelectedMedia((prev) => [...prev, ...newMedia]);
                   }
                   e.target.value = '';
                 }}
@@ -304,13 +331,44 @@ export default function ActivityFeed() {
               <button
                 type="button"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
-                  photoPreviewUrl ? 'text-indigo-500 bg-indigo-50/50' : 'text-text-secondary hover:bg-beige-50'
+                  selectedMedia.some(m => m.type === 'PHOTO') ? 'text-indigo-500 bg-indigo-50/50' : 'text-text-secondary hover:bg-beige-50'
                 }`}
                 onClick={() => document.getElementById('post-photo-input')?.click()}
               >
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
                 <span>{lang === 'en' ? 'Photo' : 'صورة'}</span>
               </button>
+
+              <input
+                type="file"
+                id="post-video-input"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files) {
+                    const newMedia = Array.from(files).map((file) => ({
+                      file,
+                      type: 'VIDEO' as const,
+                      previewUrl: URL.createObjectURL(file),
+                    }));
+                    setSelectedMedia((prev) => [...prev, ...newMedia]);
+                  }
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                  selectedMedia.some(m => m.type === 'VIDEO') ? 'text-purple-500 bg-purple-50/50' : 'text-text-secondary hover:bg-beige-50'
+                }`}
+                onClick={() => document.getElementById('post-video-input')?.click()}
+              >
+                <VideoIcon className="w-3.5 h-3.5 text-purple-500" />
+                <span>{lang === 'en' ? 'Video' : 'فيديو'}</span>
+              </button>
+
               <button
                 type="button"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
@@ -325,7 +383,7 @@ export default function ActivityFeed() {
 
             <button
               type="submit"
-              disabled={createPostMutation.isPending || (!postContent.trim() && !selectedPhoto && !eventTitle)}
+              disabled={createPostMutation.isPending || (!postContent.trim() && selectedMedia.length === 0 && !eventTitle)}
               className="px-5 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
             >
               {createPostMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -395,8 +453,44 @@ export default function ActivityFeed() {
                   </p>
                 )}
 
-                {/* Render Post Image */}
-                {post.imageUrl && (
+                {/* Render Post Media (Photos/Videos) Grid */}
+                {post.media && post.media.length > 0 && (
+                  <div className={`grid gap-2 my-2 ${post.media.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {post.media.map((med) => (
+                      <div
+                        key={med.id}
+                        className={`relative rounded-2xl overflow-hidden border border-beige-200 bg-beige-50 flex items-center justify-center ${
+                          post.media!.length === 1 ? 'w-full' : 'h-48 w-full'
+                        }`}
+                      >
+                        {med.type === 'VIDEO' ? (
+                          <video
+                            src={med.url}
+                            controls
+                            className={
+                              post.media!.length === 1
+                                ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
+                                : 'w-full h-full object-contain mx-auto'
+                            }
+                          />
+                        ) : (
+                          <img
+                            src={med.url}
+                            alt="Post Attachment"
+                            className={
+                              post.media!.length === 1
+                                ? 'w-full h-auto max-h-[500px] object-contain mx-auto'
+                                : 'w-full h-full object-contain mx-auto'
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Render Post Image Fallback (legacy single image posts) */}
+                {(!post.media || post.media.length === 0) && post.imageUrl && (
                   <div className="rounded-2xl overflow-hidden border border-beige-200 w-full bg-beige-50 my-2">
                     <img src={post.imageUrl} alt="Post Attachment" className="w-full h-auto max-h-[500px] object-contain mx-auto" />
                   </div>

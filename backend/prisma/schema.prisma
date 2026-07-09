@@ -269,14 +269,24 @@ model Comment {
 }
 
 model Post {
-  id         String    @id @default(uuid())
+  id         String      @id @default(uuid())
   content    String
   imageUrl   String?
   eventTitle String?
   eventDate  DateTime?
   authorId   String
-  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt  DateTime  @default(now())
-  likes      User[]    @relation("UserLikesPost")
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+  likes      User[]      @relation("UserLikesPost")
   comments   Comment[]
+  media      PostMedia[]
+}
+
+model PostMedia {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url       String
+  type      String   // PHOTO or VIDEO
+  createdAt DateTime @default(now())
 }
