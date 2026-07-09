@@ -26,6 +26,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const renderAttachedFiles = (fileUrlString: string | null) => {
   if (!fileUrlString) return null;
@@ -70,6 +71,7 @@ const renderAttachedFiles = (fileUrlString: string | null) => {
 };
 
 export default function StudentCourseHub() {
+  const { lang } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -432,7 +434,9 @@ export default function StudentCourseHub() {
             {course.code}
           </span>
           <h2 className="text-xl font-bold text-text-primary mt-1">{course.title}</h2>
-          <p className="text-xs text-text-secondary mt-0.5">Instructor: {course.doctor?.name}</p>
+          <p className="text-xs text-text-secondary mt-0.5">
+            {lang === 'en' ? 'Instructor: ' : 'المحاضر: '}{course.doctor?.name}
+          </p>
         </div>
       </div>
 
@@ -440,13 +444,13 @@ export default function StudentCourseHub() {
       <div className="flex gap-2 border-b border-beige-200 pb-px overflow-x-auto whitespace-nowrap scrollbar-none md:flex-wrap md:overflow-x-visible">
         {(() => {
           const tabsList = [
-            { id: 'lectures', label: 'Lectures', icon: Video },
-            { id: 'assignments', label: 'Assignments', icon: FileText },
-            { id: 'quizzes', label: 'Quizzes', icon: HelpCircle },
-            { id: 'attendance', label: 'Attendance Tracker', icon: Calendar },
+            { id: 'lectures', label: lang === 'en' ? 'Lectures' : 'المحاضرات', icon: Video },
+            { id: 'assignments', label: lang === 'en' ? 'Assignments' : 'الواجبات', icon: FileText },
+            { id: 'quizzes', label: lang === 'en' ? 'Quizzes' : 'الاختبارات', icon: HelpCircle },
+            { id: 'attendance', label: lang === 'en' ? 'Attendance Tracker' : 'متابع الحضور', icon: Calendar },
           ];
           if (isTechCourse) {
-            tabsList.push({ id: 'sandbox', label: 'Coding Sandbox', icon: Terminal });
+            tabsList.push({ id: 'sandbox', label: lang === 'en' ? 'Coding Sandbox' : 'بيئة البرمجة', icon: Terminal });
           }
           return tabsList.map((tab) => {
             const Icon = tab.icon;
@@ -1042,24 +1046,30 @@ export default function StudentCourseHub() {
           {/* Progress Overview Card */}
           <div className="bg-white p-5 rounded-2xl border border-beige-200/80 shadow-soft">
             <h4 className="text-xs font-bold text-text-primary mb-3 uppercase tracking-wider">
-              Course Details
+              {lang === 'en' ? 'Course Details' : 'تفاصيل المقرر'}
             </h4>
             
             <div className="space-y-4 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Lectures:</span>
-                <span className="text-text-primary font-bold">{course.lectures?.length || 0} uploaded</span>
+                <span className="text-text-secondary">{lang === 'en' ? 'Lectures:' : 'المحاضرات:'}</span>
+                <span className="text-text-primary font-bold">
+                  {course.lectures?.length || 0} {lang === 'en' ? 'uploaded' : 'تم رفعها'}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Assignments:</span>
-                <span className="text-text-primary font-bold">{course.assignments?.length || 0} total</span>
+                <span className="text-text-secondary">{lang === 'en' ? 'Assignments:' : 'الواجبات:'}</span>
+                <span className="text-text-primary font-bold">
+                  {course.assignments?.length || 0} {lang === 'en' ? 'total' : 'إجمالي'}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Quizzes:</span>
-                <span className="text-text-primary font-bold">{course.quizzes?.length || 0} active</span>
+                <span className="text-text-secondary">{lang === 'en' ? 'Quizzes:' : 'الاختبارات:'}</span>
+                <span className="text-text-primary font-bold">
+                  {course.quizzes?.length || 0} {lang === 'en' ? 'active' : 'نشطة'}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-text-secondary">Doctor:</span>
+                <span className="text-text-secondary">{lang === 'en' ? 'Doctor:' : 'الدكتور:'}</span>
                 <span className="text-text-primary font-bold">{course.doctor?.name}</span>
               </div>
 
@@ -1072,7 +1082,7 @@ export default function StudentCourseHub() {
                 return (
                   <div className="space-y-3 pt-3 border-t border-beige-100">
                     <div className="flex justify-between text-[10px] font-bold text-text-secondary">
-                      <span>Course Progress:</span>
+                      <span>{lang === 'en' ? 'Course Progress:' : 'التقدم بالمقرر:'}</span>
                       <span className="text-mint-500 font-extrabold">{progressPercent}%</span>
                     </div>
                     <div className="w-full bg-beige-100 rounded-full h-2 overflow-hidden border border-beige-200">
@@ -1087,7 +1097,7 @@ export default function StudentCourseHub() {
                           href={`/dashboard/student/courses/certificate?courseId=${course.id}`}
                           className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-[10px] font-extrabold text-center block shadow-soft transition-all active:scale-[0.98]"
                         >
-                          🏆 View Completion Certificate
+                          {lang === 'en' ? '🏆 View Completion Certificate' : '🏆 عرض شهادة الإنجاز'}
                         </Link>
                       </div>
                     )}
@@ -1100,11 +1110,13 @@ export default function StudentCourseHub() {
           {/* TA Assigned Card */}
           <div className="bg-white p-5 rounded-2xl border border-beige-200/80 shadow-soft">
             <h4 className="text-xs font-bold text-text-primary mb-3 uppercase tracking-wider">
-              Course assistants (TAs)
+              {lang === 'en' ? 'Course assistants (TAs)' : 'معيدي المقرر (TAs)'}
             </h4>
             
             {course.tas?.length === 0 ? (
-              <p className="text-[11px] text-text-secondary italic">No TAs assigned to this course.</p>
+              <p className="text-[11px] text-text-secondary italic">
+                {lang === 'en' ? 'No TAs assigned to this course.' : 'لا يوجد معيدين معينين لهذا المقرر.'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {course.tas.map((taJob: any) => (
