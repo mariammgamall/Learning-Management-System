@@ -83,8 +83,22 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
 
 *   **📱 Dedicated Social Activity Feed**:
     - **Unified Feed**: Created a single tab for the social hub at `/dashboard/feed`, accessible to Admins, Doctors, TAs, and Students.
-    - **Actions**: Includes **Like** triggers, expanding inline **Comment** drawers (with reply threads), and **Share** (copies link to clipboard with active toast alerts).
+    - **Tab-filtered Feeds**: Reordered layout moving control selector tabs (**All Feed**, **My Posts**, **Bookmarks**, **My Reposts**) under the page header description.
+    - **Conditional Post Creator**: Post creation card is visible exclusively on the **All Feed** tab to maintain an uncluttered page interface.
+    - **Multiple Media Uploads**: Allows attaching multiple photos and videos simultaneously during creation with instant close previews.
+    - **Bookmark & Saved Posts**: Users can save/unsave posts from the three-dot action menu, persisting them to their bookmarks collection.
+    - **Reposting and Quote Reposts**: Supports instant reposting and reposting with custom comments/quotes. Includes options to delete/undo reposts.
+    - **Self-Service Actions**: Users can edit or delete their own posts, comments, and replies directly in the feed interface.
+    - **🌐 Context-Aware Translation**:
+        - Features a translate button changing directions on-the-fly depending on post context (AR -> EN or EN -> AR).
+        - Direct dictionary lookup mapping for the 20 seed posts ensuring 100% accurate, human-crafted translations.
+        - Built-in machine translation corrector replacing error-prone translations (e.g. automatically correcting machine translation of "experience" from "سفر" to "تجارب").
     - **Seeded Data**: Seeded database with **20 high-quality discussions** by Doctors and TAs on subjects like consistency, UI/UX, mechanical engineering, and robotics, populated with realistic comments and likes from all users.
+
+*   **🛡️ Custom Instructor LMS Portal Controls**:
+    - Restructured the course control workspaces to prevent dashboard redundancies for teaching staff while preserving direct access inside course pages:
+        - **Doctors' account**: Hides the Assignments Manager and Quizzes Builder options from their main control panel.
+        - **TAs' account**: Hides the Lectures Auxiliary and Quizzes Builder options from their main control panel.
 
 ---
 
