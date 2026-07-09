@@ -23,6 +23,8 @@ import {
   Repeat,
   Pencil,
   Trash2,
+  User,
+  Languages,
 } from 'lucide-react';
 
 interface Author {
@@ -88,7 +90,7 @@ export default function ActivityFeed() {
   const [showEventInputs, setShowEventInputs] = useState(false);
 
   // Saved Posts and Reposts active tabs
-  const [activeFeedTab, setActiveFeedTab] = useState<'all' | 'saved' | 'reposts'>('all');
+  const [activeFeedTab, setActiveFeedTab] = useState<'all' | 'saved' | 'reposts' | 'my-posts'>('all');
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
 
   // Edit post and Quote repost states
@@ -96,6 +98,10 @@ export default function ActivityFeed() {
   const [editContent, setEditContent] = useState('');
   const [repostModalPost, setRepostModalPost] = useState<Post | null>(null);
   const [repostCommentText, setRepostCommentText] = useState('');
+
+  // Translation states
+  const [translatedPosts, setTranslatedPosts] = useState<{ [postId: string]: string }>({});
+  const [translatingPostId, setTranslatingPostId] = useState<string | null>(null);
 
   // Fetch Feed
   const { data: posts = [], isLoading } = useQuery<Post[]>({
@@ -113,8 +119,82 @@ export default function ActivityFeed() {
     if (activeFeedTab === 'reposts') {
       return post.repostOfId !== null && post.author.id === user?.id;
     }
+    if (activeFeedTab === 'my-posts') {
+      return post.author.id === user?.id;
+    }
     return true; // 'all'
   });
+
+  const handleTranslate = async (postId: string, text: string) => {
+    if (!text || !text.trim()) return;
+    setTranslatingPostId(postId);
+    try {
+      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|ar`);
+      const data = await response.json();
+      if (data?.responseData?.translatedText) {
+        setTranslatedPosts((prev) => ({
+          ...prev,
+          [postId]: data.responseData.translatedText,
+        }));
+      } else {
+        addToast(lang === 'en' ? 'Failed to translate' : 'فشلت الترجمة', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      addToast(lang === 'en' ? 'Failed to translate' : 'فشلت الترجمة', 'error');
+    } finally {
+      setTranslatingPostId(null);
+    }
+  };
+
+  const handleShowOriginal = (postId: string) => {
+    setTranslatedPosts((prev) => {
+      const updated = { ...prev };
+      delete updated[postId];
+      return updated;
+    });
+  };
+
+  const renderPostContent = (postId: string, content: string, isQuote: boolean = false) => {
+    if (!content) return null;
+    const isTranslated = !!translatedPosts[postId];
+    const isTranslating = translatingPostId === postId;
+    const displayText = isTranslated ? translatedPosts[postId] : content;
+
+    return (
+      <div className="space-y-1 text-left">
+        <p className={`text-xs ${isQuote ? 'font-semibold mb-2' : 'font-medium'} text-text-primary leading-relaxed whitespace-pre-line`}>
+          {displayText}
+        </p>
+        
+        {/* Translation action */}
+        <div className="flex items-center gap-1.5 mt-1 select-none">
+          {isTranslating ? (
+            <span className="text-[10px] text-text-secondary flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin text-mint-500" />
+              <span>{lang === 'en' ? 'Translating...' : 'جاري الترجمة...'}</span>
+            </span>
+          ) : isTranslated ? (
+            <button
+              onClick={() => handleShowOriginal(postId)}
+              className="text-mint-600 hover:text-mint-500 text-[10px] font-bold flex items-center gap-1 transition-all"
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <span>{lang === 'en' ? 'Show Original' : 'عرض الأصلي'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleTranslate(postId, content)}
+              className="text-text-secondary hover:text-mint-500 text-[10px] font-bold flex items-center gap-1 transition-all"
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <span>{lang === 'en' ? 'Translate to Arabic' : 'ترجم إلى العربية'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Create Post Mutation
   const createPostMutation = useMutation({
@@ -498,6 +578,7 @@ export default function ActivityFeed() {
       <div className="flex gap-2 border-b border-beige-200 pb-px mb-4">
         {[
           { id: 'all', label: lang === 'en' ? 'All Feed' : 'الرئيسية', icon: Compass },
+          { id: 'my-posts', label: lang === 'en' ? 'My Posts' : 'منشوراتي', icon: User },
           { id: 'saved', label: lang === 'en' ? 'Bookmarks' : 'المنشورات المحفوظة', icon: Bookmark },
           { id: 'reposts', label: lang === 'en' ? 'My Reposts' : 'إعادات النشر الخاصة بي', icon: Repeat },
         ].map((tab) => {
@@ -683,11 +764,7 @@ export default function ActivityFeed() {
                     </div>
                   ) : post.repostOf ? (
                     <div className="space-y-2">
-                      {post.content && (
-                        <p className="text-xs font-semibold text-text-primary leading-relaxed whitespace-pre-line text-left mb-2">
-                          {post.content}
-                        </p>
-                      )}
+                      {renderPostContent(post.id, post.content, true)}
                       <div className="bg-beige-50/40 p-4 rounded-2xl border border-beige-200/80 space-y-3 text-left">
                         {/* Original Author */}
                         <div className="flex gap-2.5 items-center">
@@ -708,11 +785,7 @@ export default function ActivityFeed() {
                         </div>
 
                         {/* Original Content */}
-                        {post.repostOf.content && (
-                          <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
-                            {post.repostOf.content}
-                          </p>
-                        )}
+                        {renderPostContent(`${post.id}-repost`, post.repostOf.content, false)}
 
                         {/* Original Media Grid */}
                         {post.repostOf.media && post.repostOf.media.length > 0 && (
@@ -769,11 +842,7 @@ export default function ActivityFeed() {
                   ) : (
                     <>
                       {/* Render regular post content (standard post render code) */}
-                      {post.content && (
-                        <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line text-left">
-                          {post.content}
-                        </p>
-                      )}
+                      {renderPostContent(post.id, post.content, false)}
 
                       {/* Render Post Media (Photos/Videos) Grid */}
                       {post.media && post.media.length > 0 && (
@@ -1043,12 +1112,12 @@ export default function ActivityFeed() {
             />
 
             {/* Nested Original Post Preview snippet */}
-            <div className="bg-beige-50/50 p-3 rounded-2xl border border-beige-200/80 text-left text-xs text-text-secondary space-y-1 max-h-40 overflow-y-auto">
+            <div className="bg-beige-100/60 p-4 rounded-2xl border border-beige-300/80 text-left text-xs text-text-secondary space-y-1.5 max-h-40 overflow-y-auto">
               <div className="font-extrabold text-text-primary text-[11px] flex items-center gap-1.5">
                 <span>{repostModalPost.author.name}</span>
-                <span className="px-1.5 py-0.2 text-[8px] bg-beige-200 rounded text-text-secondary">{repostModalPost.author.role}</span>
+                <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-beige-300/80 text-text-secondary">{repostModalPost.author.role}</span>
               </div>
-              <p className="line-clamp-3 font-medium text-[11px] leading-relaxed">
+              <p className="line-clamp-3 font-medium text-[11px] leading-relaxed text-text-primary">
                 {repostModalPost.content || (lang === 'en' ? '[Attachment]' : '[مرفق]')}
               </p>
             </div>
