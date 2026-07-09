@@ -331,8 +331,24 @@ router.post('/:id/leave', authGuard, async (req: AuthenticatedRequest, res: Resp
 router.get('/:id/participants', authGuard, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const list = activeAttendees[id] || [];
-    return res.status(200).json(list);
+    const user = req.user!;
+
+    if (!activeAttendees[id]) {
+      activeAttendees[id] = [];
+    }
+
+    const exists = activeAttendees[id].some(a => a.id === user.id);
+    if (!exists) {
+      activeAttendees[id].push({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        micOn: true,
+        cameraOn: true,
+      });
+    }
+
+    return res.status(200).json(activeAttendees[id]);
   } catch (error) {
     console.error('Get meeting participants error:', error);
     return res.status(500).json({ message: 'Internal server error' });

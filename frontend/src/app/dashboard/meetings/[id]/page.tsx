@@ -171,6 +171,7 @@ export default function MeetingRoomPage() {
   const updateMediaStatus = async (newMic: boolean, newCam: boolean) => {
     try {
       await api.post(`/meetings/${meetingId}/update-media`, { micOn: newMic, cameraOn: newCam });
+      fetchParticipants();
     } catch (e) {
       console.error('Failed to update media status:', e);
     }
@@ -684,8 +685,17 @@ Status: Successfully Recorded and Compiled.`;
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {(p.cameraOn ?? true) ? <Video className="w-4 h-4 text-mint-500" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
-                      {(p.micOn ?? true) ? <Mic className="w-4 h-4 text-mint-500" /> : <MicOff className="w-4 h-4 text-rose-500" />}
+                      {isMe ? (
+                        <>
+                          {cameraOn ? <Video className="w-4 h-4 text-mint-500" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
+                          {micOn ? <Mic className="w-4 h-4 text-mint-500" /> : <MicOff className="w-4 h-4 text-rose-500" />}
+                        </>
+                      ) : (
+                        <>
+                          {(p.cameraOn ?? true) ? <Video className="w-4 h-4 text-mint-500" /> : <VideoOff className="w-4 h-4 text-rose-500" />}
+                          {(p.micOn ?? true) ? <Mic className="w-4 h-4 text-mint-500" /> : <MicOff className="w-4 h-4 text-rose-500" />}
+                        </>
+                      )}
                     </div>
                   </div>
                 );
