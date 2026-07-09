@@ -41,10 +41,34 @@ export default function CourseCheckoutPage() {
     enabled: !!courseId,
   });
 
+  // Fetch Student Stats for Achievement Discounts
+  const { data: statsData } = useQuery({
+    queryKey: ['studentStats'],
+    queryFn: async () => {
+      const response = await api.get('/dashboard/stats');
+      return response.data;
+    },
+  });
+
+  const metrics = statsData?.metrics || {
+    lectureCompletionPercentage: 0,
+    averageAssignmentGrade: 0,
+    averageQuizGrade: 0,
+  };
+
+  const perfectAttendanceUnlocked = metrics.lectureCompletionPercentage >= 75;
+  const quizChampionUnlocked = (metrics.averageQuizGrade || 0) >= 85;
+  const fastGraduateUnlocked = metrics.lectureCompletionPercentage === 100;
+  const codeCadetUnlocked = metrics.averageAssignmentGrade >= 80;
+
+  const unlockedCount = (perfectAttendanceUnlocked ? 1 : 0) + (quizChampionUnlocked ? 1 : 0) + (fastGraduateUnlocked ? 1 : 0) + (codeCadetUnlocked ? 1 : 0);
+  const discountPercent = unlockedCount * 10; // 10% per badge
+
   const enrollMutation = useMutation({
     mutationFn: async () => {
       const response = await api.post(`/courses/${courseId}/enroll`, {
         paymentToken: 'DEMO_PAYMENT_SUCCESS',
+        discountPercent,
       });
       return response.data;
     },
@@ -192,7 +216,7 @@ export default function CourseCheckoutPage() {
                     <Loader2 className="w-4 h-4 animate-spin" /> Processing Payment Transaction...
                   </>
                 ) : (
-                  `Pay ${course.price.toLocaleString()} LE & Enroll`
+                  `Pay ${Math.max(0, course.price - Math.round((course.price * (unlockedCount * 10)) / 100)).toLocaleString()} LE & Enroll`
                 )}
               </button>
             </div>
@@ -214,25 +238,45 @@ export default function CourseCheckoutPage() {
             <p className="text-[11px] text-text-secondary mt-1 line-clamp-3" dangerouslySetInnerHTML={{ __html: course.description }} />
           </div>
 
-          <div className="border-t border-beige-200 pt-4 space-y-3 text-xs font-semibold">
-            <h5 className="text-[10px] font-bold text-text-secondary uppercase">Order Summary</h5>
-            <div className="flex justify-between text-text-secondary">
-              <span>Course Tuition:</span>
-              <span>{course.price.toLocaleString()} LE</span>
+          {(() => {
+            const originalPrice = course.price;
+            const discountAmount = Math.round((originalPrice * discountPercent) / 100);
+            const finalPrice = originalPrice - discountAmount;
+
+            return (
+              <div className="border-t border-beige-200 pt-4 space-y-3 text-xs font-semibold">
+                <h5 className="text-[10px] font-bold text-text-secondary uppercase">Order Summary</h5>
+                <div className="flex justify-between text-text-secondary">
+                  <span>Course Tuition:</span>
+                  <span>{originalPrice.toLocaleString()} LE</span>
+                </div>
+                {discountPercent > 0 && (
+                  <div className="flex justify-between text-rose-500 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/40">
+                    <span>Gamification Discount (-{discountPercent}%):</span>
+                    <span>- {discountAmount.toLocaleString()} LE</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-text-secondary">
+                  <span>Platform Service Fee:</span>
+                  <span>0.00 LE</span>
+                </div>
+                <div className="flex justify-between text-text-secondary">
+                  <span>Value Added Tax (VAT):</span>
+                  <span>0.00 LE</span>
+                </div>
+                <div className="flex justify-between text-text-primary font-bold border-t border-dashed border-beige-300 pt-3 text-sm">
+                  <span>Total Price:</span>
+                  <span className="text-mint-500">{finalPrice.toLocaleString()} LE</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {discountPercent > 0 && (
+            <div className="p-4 bg-mint-50 border border-mint-200 rounded-2xl text-[10px] text-mint-700 leading-relaxed font-bold animate-pulse">
+              🎉 Achievements Discount Applied! You have unlocked {unlockedCount} badge(s) in your Gamification Hub, saving you {discountPercent}% on this course purchase!
             </div>
-            <div className="flex justify-between text-text-secondary">
-              <span>Platform Service Fee:</span>
-              <span>0.00 LE</span>
-            </div>
-            <div className="flex justify-between text-text-secondary">
-              <span>Value Added Tax (VAT):</span>
-              <span>0.00 LE</span>
-            </div>
-            <div className="flex justify-between text-text-primary font-bold border-t border-dashed border-beige-300 pt-3 text-sm">
-              <span>Total Price:</span>
-              <span className="text-mint-500">{course.price.toLocaleString()} LE</span>
-            </div>
-          </div>
+          )}
 
           <div className="p-4 bg-white border border-beige-200 rounded-2xl text-[10px] text-text-secondary leading-relaxed">
             * This is a sandbox demonstration page. Submitting payments checks authorization logic and performs complete simulator enrollments without charging actual credit cards.

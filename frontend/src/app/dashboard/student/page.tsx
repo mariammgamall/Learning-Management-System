@@ -216,26 +216,96 @@ export default function StudentDashboard() {
           </div>
 
           {/* Academic Achievements / Badges locker */}
-          <div className="p-5 bg-white rounded-2xl shadow-soft border border-beige-200/80 space-y-4">
-            <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">{t('achievements_locker')}</h4>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { name: t('perfect_attend'), desc: t('perfect_attend_desc'), icon: '🏆', color: 'bg-indigo-50 border-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:border-indigo-900/40 dark:text-indigo-300' },
-                { name: t('quiz_champion'), desc: t('quiz_champion_desc'), icon: '🧠', color: 'bg-purple-50 border-purple-100 text-purple-700 dark:bg-purple-950/30 dark:border-purple-900/40 dark:text-purple-300' },
-                { name: t('fast_graduate'), desc: t('fast_graduate_desc'), icon: '🎓', color: 'bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900/40 dark:text-amber-300' },
-                { name: t('code_cadet'), desc: t('code_cadet_desc'), icon: '💻', color: 'bg-teal-50 border-teal-100 text-teal-700 dark:bg-teal-950/30 dark:border-teal-900/40 dark:text-teal-300' },
-              ].map((badge) => (
-                <div key={badge.name} className={`p-3 rounded-xl border ${badge.color} text-center space-y-1 relative group cursor-pointer shadow-soft hover:shadow-md transition-all`}>
-                  <div className="text-lg">{badge.icon}</div>
-                  <h5 className="text-[9px] font-extrabold truncate">{badge.name}</h5>
-                  <p className="text-[8px] text-text-secondary dark:text-neutral-300 leading-tight opacity-0 group-hover:opacity-100 absolute inset-0 bg-white/95 dark:bg-neutral-900/95 rounded-xl flex items-center justify-center p-1.5 transition-opacity font-bold">
-                    {badge.desc}
-                  </p>
+          {(() => {
+            const perfectAttendanceUnlocked = metrics.lectureCompletionPercentage >= 75;
+            const quizChampionUnlocked = (metrics.averageQuizGrade || 0) >= 85;
+            const fastGraduateUnlocked = metrics.lectureCompletionPercentage === 100;
+            const codeCadetUnlocked = metrics.averageAssignmentGrade >= 80;
+
+            const badges = [
+              { 
+                name: t('perfect_attend'), 
+                desc: t('perfect_attend_desc'), 
+                icon: '🏆', 
+                isUnlocked: perfectAttendanceUnlocked,
+                req: 'Requires Lecture Watch >= 75%',
+                unlockedColor: 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/30 dark:border-indigo-900/40 dark:text-indigo-300',
+                lockedColor: 'bg-neutral-50/50 border-neutral-200 text-neutral-400 dark:bg-neutral-900/10 dark:border-neutral-800/40 dark:text-neutral-600 grayscale'
+              },
+              { 
+                name: t('quiz_champion'), 
+                desc: t('quiz_champion_desc'), 
+                icon: '🧠', 
+                isUnlocked: quizChampionUnlocked,
+                req: 'Requires Average Quiz Grade >= 85%',
+                unlockedColor: 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950/30 dark:border-purple-900/40 dark:text-purple-300',
+                lockedColor: 'bg-neutral-50/50 border-neutral-200 text-neutral-400 dark:bg-neutral-900/10 dark:border-neutral-800/40 dark:text-neutral-600 grayscale'
+              },
+              { 
+                name: t('fast_graduate'), 
+                desc: t('fast_graduate_desc'), 
+                icon: '🎓', 
+                isUnlocked: fastGraduateUnlocked,
+                req: 'Requires Course Completion 100%',
+                unlockedColor: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-900/40 dark:text-amber-300',
+                lockedColor: 'bg-neutral-50/50 border-neutral-200 text-neutral-400 dark:bg-neutral-900/10 dark:border-neutral-800/40 dark:text-neutral-600 grayscale'
+              },
+              { 
+                name: t('code_cadet'), 
+                desc: t('code_cadet_desc'), 
+                icon: '💻', 
+                isUnlocked: codeCadetUnlocked,
+                req: 'Requires Average Assignment Grade >= 80%',
+                unlockedColor: 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/30 dark:border-teal-900/40 dark:text-teal-300',
+                lockedColor: 'bg-neutral-50/50 border-neutral-200 text-neutral-400 dark:bg-neutral-900/10 dark:border-neutral-800/40 dark:text-neutral-600 grayscale'
+              },
+            ];
+
+            const unlockedCount = badges.filter(b => b.isUnlocked).length;
+            const currentDiscount = unlockedCount * 10;
+
+            return (
+              <div className="p-5 bg-white rounded-2xl shadow-soft border border-beige-200/80 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">{t('achievements_locker')}</h4>
+                  {currentDiscount > 0 ? (
+                    <span className="text-[9px] font-extrabold px-2 py-0.5 bg-mint-100 text-mint-600 rounded-full animate-bounce">
+                      🎉 {currentDiscount}% course discount active!
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-bold px-2 py-0.5 bg-beige-100 text-text-secondary rounded-full">
+                      Unlock badges to get course discounts!
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
+                
+                {currentDiscount > 0 && (
+                  <p className="text-[9px] text-text-secondary leading-normal bg-mint-50/40 p-2 rounded-lg border border-mint-100/50">
+                    You have unlocked <strong>{unlockedCount} of 4</strong> achievements. A <strong>{currentDiscount}% discount</strong> has been automatically applied to all courses in the catalog!
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  {badges.map((badge) => (
+                    <div 
+                      key={badge.name} 
+                      className={`p-3 rounded-xl border ${badge.isUnlocked ? badge.unlockedColor : badge.lockedColor} text-center space-y-1 relative group cursor-pointer shadow-soft hover:shadow-md transition-all`}
+                    >
+                      <div className="text-lg">{badge.icon}</div>
+                      <h5 className="text-[9px] font-extrabold truncate">{badge.name}</h5>
+                      <div className="text-[7.5px] font-bold text-center select-none mt-0.5">
+                        {badge.isUnlocked ? '🔓 Unlocked (-10%)' : '🔒 Locked'}
+                      </div>
+                      <div className="text-[8px] text-text-secondary dark:text-neutral-300 leading-tight opacity-0 group-hover:opacity-100 absolute inset-0 bg-white/95 dark:bg-neutral-900/95 rounded-xl flex flex-col items-center justify-center p-1.5 transition-opacity font-bold">
+                        <p className="line-clamp-2">{badge.desc}</p>
+                        <span className="text-[7px] mt-1 text-mint-500 font-extrabold">{badge.req}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Overall Lecture progress bar card */}
           <div className="p-5 bg-white rounded-2xl shadow-soft border border-beige-200/80 space-y-3">
