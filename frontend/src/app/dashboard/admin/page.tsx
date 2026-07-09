@@ -36,13 +36,13 @@ export default function AdminDashboard() {
     <div className="space-y-8 max-w-6xl mx-auto">
       
       {/* Hero Panel */}
-      <div className="p-6 md:p-8 bg-beige-200 border border-beige-300 rounded-3xl relative overflow-hidden flex flex-col justify-between min-h-[160px]">
-        <div className="space-y-1">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-mint-500">
+      <div className="p-6 md:p-8 bg-gradient-to-tr from-indigo-600 to-violet-500 text-white rounded-3xl shadow-premium relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+        <div className="relative z-10 space-y-2">
+          <span className="text-[10px] font-bold tracking-widest bg-white/20 px-3 py-1 rounded-full uppercase">
             System Administration
           </span>
-          <h2 className="text-xl md:text-2xl font-black text-text-primary">LMS Platform Hub Control</h2>
-          <p className="text-xs text-text-secondary max-w-md leading-relaxed">
+          <h2 className="text-xl md:text-3xl font-extrabold text-white">LMS Platform Hub Control</h2>
+          <p className="text-xs md:text-sm text-indigo-100 max-w-md leading-relaxed">
             Manage instructors, assistants, students, and course registries. View system-wide analytics.
           </p>
         </div>
