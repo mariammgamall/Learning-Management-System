@@ -27,6 +27,11 @@ router.get('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
             id: true,
           },
         },
+        savedBy: {
+          select: {
+            id: true,
+          },
+        },
         comments: {
           where: { parentId: null },
           orderBy: { createdAt: 'asc' },
@@ -55,6 +60,19 @@ router.get('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
           },
         },
         media: true,
+        repostOf: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                role: true,
+                profilePhoto: true,
+              },
+            },
+            media: true,
+          },
+        },
       },
     });
 
@@ -107,8 +125,22 @@ router.post('/', authGuard, upload.array('media', 10), async (req: Authenticated
           },
         },
         likes: { select: { id: true } },
+        savedBy: { select: { id: true } },
         comments: true,
         media: true,
+        repostOf: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                role: true,
+                profilePhoto: true,
+              },
+            },
+            media: true,
+          },
+        },
       },
     });
 
@@ -201,6 +233,121 @@ router.post('/:id/comment', authGuard, async (req: AuthenticatedRequest, res: Re
     return res.status(201).json(comment);
   } catch (error) {
     console.error('Create feed post comment error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   POST /api/v1/posts/:id/save
+// @desc    Toggle save post (bookmark)
+router.post('/:id/save', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: { savedBy: { select: { id: true } } },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const hasSaved = post.savedBy.some((u) => u.id === userId);
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: {
+        savedBy: hasSaved
+          ? { disconnect: { id: userId } }
+          : { connect: { id: userId } },
+      },
+      include: {
+        savedBy: { select: { id: true } },
+      },
+    });
+
+    return res.status(200).json({
+      message: hasSaved ? 'Post unsaved' : 'Post saved',
+      saved: !hasSaved,
+      savedBy: updatedPost.savedBy,
+    });
+  } catch (error) {
+    console.error('Toggle save post error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   POST /api/v1/posts/:id/repost
+// @desc    Toggle repost of a feed post
+router.post('/:id/repost', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+
+    // Check if original post exists
+    const originalPost = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!originalPost) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Check if user already reposted this post
+    const existingRepost = await prisma.post.findFirst({
+      where: {
+        authorId: userId,
+        repostOfId: postId,
+      },
+    });
+
+    if (existingRepost) {
+      // If already reposted, we undo/remove the repost
+      await prisma.post.delete({
+        where: { id: existingRepost.id },
+      });
+      return res.status(200).json({ message: 'Repost removed', reposted: false, repostId: existingRepost.id });
+    }
+
+    // Create a new repost
+    const repost = await prisma.post.create({
+      data: {
+        content: '',
+        authorId: userId,
+        repostOfId: postId,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            profilePhoto: true,
+          },
+        },
+        likes: { select: { id: true } },
+        savedBy: { select: { id: true } },
+        comments: true,
+        repostOf: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                role: true,
+                profilePhoto: true,
+              },
+            },
+            media: true,
+          },
+        },
+      },
+    });
+
+    return res.status(201).json({ message: 'Reposted successfully', reposted: true, repost });
+  } catch (error) {
+    console.error('Repost error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

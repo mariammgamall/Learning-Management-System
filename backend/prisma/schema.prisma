@@ -34,6 +34,7 @@ model User {
   publishedLectures Lecture[]
   posts             Post[]
   likedPosts        Post[]           @relation("UserLikesPost")
+  savedPosts        Post[]           @relation("UserSavedPosts")
 }
 
 model Course {
@@ -280,6 +281,10 @@ model Post {
   likes      User[]      @relation("UserLikesPost")
   comments   Comment[]
   media      PostMedia[]
+  savedBy    User[]      @relation("UserSavedPosts")
+  repostOfId String?
+  repostOf   Post?       @relation("Reposts", fields: [repostOfId], references: [id], onDelete: Cascade)
+  reposts    Post[]      @relation("Reposts")
 }
 
 model PostMedia {
