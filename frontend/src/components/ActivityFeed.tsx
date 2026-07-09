@@ -16,6 +16,7 @@ import {
   Compass,
   CornerDownRight,
   MoreHorizontal,
+  Share2,
 } from 'lucide-react';
 
 interface Author {
@@ -158,6 +159,19 @@ export default function ActivityFeed() {
     commentMutation.mutate({ postId, content, parentId });
   };
 
+  const handleShare = (postId: string) => {
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}/dashboard/feed?post=${postId}`;
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          addToast(lang === 'en' ? 'Post link copied to clipboard!' : 'تم نسخ رابط المنشور إلى الحافظة!', 'success');
+        })
+        .catch(() => {
+          addToast('Failed to copy link', 'error');
+        });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Create Post Card */}
@@ -278,29 +292,36 @@ export default function ActivityFeed() {
                   </span>
                 </div>
 
-                {/* Like / Comment Action buttons */}
-                <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold border-b border-beige-100/40 pb-1">
+                {/* Like / Comment / Share Action buttons */}
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold border-b border-beige-100/40 pb-1">
                   <button
                     onClick={() => handleLike(post.id)}
-                    className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
                       hasLiked 
                         ? 'text-mint-500 bg-mint-50/50' 
                         : 'text-text-secondary hover:bg-beige-50'
                     }`}
                   >
-                    <ThumbsUp className={`w-4 h-4 ${hasLiked ? 'fill-current' : ''}`} />
+                    <ThumbsUp className={`w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}`} />
                     <span>{lang === 'en' ? 'Like' : 'إعجاب'}</span>
                   </button>
                   <button
                     onClick={() => setActiveCommentPostId(showComments ? null : post.id)}
-                    className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all ${
                       showComments 
                         ? 'text-indigo-500 bg-indigo-50/50' 
                         : 'text-text-secondary hover:bg-beige-50'
                     }`}
                   >
-                    <MessageCircle className="w-4 h-4" />
+                    <MessageCircle className="w-3.5 h-3.5" />
                     <span>{lang === 'en' ? 'Comment' : 'تعليق'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare(post.id)}
+                    className="flex items-center justify-center gap-1.5 py-2 text-text-secondary hover:bg-beige-50 rounded-xl transition-all"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{lang === 'en' ? 'Share' : 'مشاركة'}</span>
                   </button>
                 </div>
 

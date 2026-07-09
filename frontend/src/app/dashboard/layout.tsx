@@ -28,6 +28,7 @@ import {
   Sun,
   Moon,
   User,
+  Compass,
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -121,6 +122,7 @@ export default function DashboardLayout({
   // Sidebar Links config based on role
   const getSidebarLinks = (role: string) => {
     const commonLinks = [
+      { label: lang === 'en' ? 'Social Feed' : 'ساحة التفاعل', href: '/dashboard/feed', icon: Compass },
       { label: t('meetings'), href: '/dashboard/meetings', icon: Video },
       { label: t('profile'), href: '/dashboard/profile', icon: User },
     ];
