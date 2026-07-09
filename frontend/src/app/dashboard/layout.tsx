@@ -168,6 +168,18 @@ export default function DashboardLayout({
     addToast('Logged out successfully', 'success');
   };
 
+  const isMeetingPage = pathname.includes('/meetings/');
+
+  if (isMeetingPage) {
+    return (
+      <div className="flex min-h-screen bg-beige-50">
+        <main className="flex-1 w-full min-h-screen relative z-30">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-beige-50">
       <CommandPalette />
