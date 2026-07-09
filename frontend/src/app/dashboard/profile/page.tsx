@@ -21,6 +21,7 @@ import {
   CheckCircle,
   ExternalLink,
   ChevronRight,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import ModalPortal from '@/components/ModalPortal';
@@ -232,6 +233,120 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const handleDownloadTranscript = () => {
+    // Generate printable HTML content
+    let yearsHtml = '';
+    
+    Object.keys(coursesByYear).sort((a, b) => Number(b) - Number(a)).forEach((yearStr) => {
+      const year = Number(yearStr);
+      const enrollments = coursesByYear[year];
+      
+      let rowsHtml = '';
+      enrollments.forEach((enr: any) => {
+        const course = enr.course;
+        const overall = calculateOverallCourseGrade(course.assignments, course.quizzes);
+        const presentCount = course.attendances.filter((att: any) => att.status === 'PRESENT').length;
+        const totalAtt = course.attendances.length;
+        const attendanceRate = totalAtt > 0 ? `${Math.round((presentCount / totalAtt) * 100)}%` : 'N/A';
+        
+        rowsHtml += `
+          <tr>
+            <td style="font-weight: bold; border: 1px solid #cbd5e1; padding: 10px;">${course.code}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px;">${course.title}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px;">${course.doctor?.name || 'N/A'}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px;">${attendanceRate}</td>
+            <td style="text-align: right; font-weight: bold; color: #0f766e; border: 1px solid #cbd5e1; padding: 10px;">${overall !== null ? `${overall}%` : 'N/A'}</td>
+          </tr>
+        `;
+      });
+
+      yearsHtml += `
+        <div class="year-title" style="font-size: 14px; font-weight: bold; color: #0f766e; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin: 25px 0 10px 0; text-transform: uppercase;">${lang === 'en' ? `Academic Year ${year}` : `العام الدراسي ${year}`}</div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+          <thead>
+            <tr>
+              <th style="background: #f1f5f9; color: #334155; text-align: ${lang === 'ar' ? 'right' : 'left'}; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; width: 15%;">${lang === 'en' ? 'Course Code' : 'رمز المقرر'}</th>
+              <th style="background: #f1f5f9; color: #334155; text-align: ${lang === 'ar' ? 'right' : 'left'}; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; width: 40%;">${lang === 'en' ? 'Course Title' : 'اسم المقرر'}</th>
+              <th style="background: #f1f5f9; color: #334155; text-align: ${lang === 'ar' ? 'right' : 'left'}; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; width: 25%;">${lang === 'en' ? 'Instructor' : 'المحاضر'}</th>
+              <th style="background: #f1f5f9; color: #334155; text-align: ${lang === 'ar' ? 'right' : 'left'}; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; width: 10%;">${lang === 'en' ? 'Attendance' : 'الحضور'}</th>
+              <th style="background: #f1f5f9; color: #334155; text-align: ${lang === 'ar' ? 'left' : 'right'}; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; width: 10%;">${lang === 'en' ? 'Score' : 'الدرجة'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+    });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return addToast('Failed to open print window. Please allow popups.', 'error');
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Academic Transcript - ${user.name}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; direction: ${lang === 'ar' ? 'rtl' : 'ltr'}; }
+          .header { text-align: center; border-bottom: 2px solid #0f766e; padding-bottom: 20px; margin-bottom: 30px; }
+          .header h1 { margin: 0; font-size: 24px; color: #0f766e; text-transform: uppercase; letter-spacing: 1px; }
+          .header p { margin: 5px 0 0 0; font-size: 12px; color: #64748b; }
+          .student-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; }
+          .student-info div { margin-bottom: 5px; }
+          .student-info span { font-weight: bold; color: #475569; }
+          .footer-note { margin-top: 50px; font-size: 10px; text-align: center; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
+          .signature-block { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; }
+          .signature { border-top: 1px solid #94a3b8; width: 200px; text-align: center; padding-top: 5px; margin-top: 40px; }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${lang === 'en' ? 'Official Academic Transcript' : 'بيان الدرجات الأكاديمي الرسمي'}</h1>
+          <p>${lang === 'en' ? 'Learning Management System - Academy Registrar' : 'نظام إدارة التعلم - مسجل الأكاديمية الرسمي'}</p>
+        </div>
+        
+        <div class="student-info">
+          <div><span>${lang === 'en' ? 'Student Name: ' : 'اسم الطالب: '}</span>${user.name}</div>
+          <div><span>${lang === 'en' ? 'Email Address: ' : 'البريد الإلكتروني: '}</span>${user.email}</div>
+          <div><span>${lang === 'en' ? 'Student ID: ' : 'رقم الطالب: '}</span>${user.id.substring(0, 8).toUpperCase()}</div>
+          <div><span>${lang === 'en' ? 'Date Issued: ' : 'تاريخ الإصدار: '}</span>${new Date().toLocaleDateString()}</div>
+        </div>
+
+        ${yearsHtml}
+
+        <div class="signature-block">
+          <div>
+            <p>${lang === 'en' ? 'Registrar Department' : 'إدارة شؤون الطلاب'}</p>
+            <div class="signature"></div>
+          </div>
+          <div>
+            <p>${lang === 'en' ? 'Dean of Academic Affairs' : 'عميد الشؤون الأكاديمية'}</p>
+            <div class="signature"></div>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          ${lang === 'en' 
+            ? 'This document is an official academic transcript generated automatically by the Learning Management System.' 
+            : 'هذه الوثيقة عبارة عن بيان درجات أكاديمي رسمي تم إنشاؤه تلقائياً بواسطة نظام إدارة التعلم.'}
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handleSaveInfo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -451,6 +566,27 @@ export default function ProfilePage() {
 
       {activeTab === 'transcript' && (
         <div className="space-y-6 animate-fade-in">
+          <div className="flex justify-between items-center bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft">
+            <div>
+              <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                {lang === 'en' ? 'Official Academic Transcript' : 'بيان الدرجات الأكاديمي الرسمي'}
+              </h3>
+              <p className="text-[10px] text-text-secondary mt-0.5">
+                {lang === 'en' ? 'View and download your official academic records and grade matrices.' : 'عرض وتحميل سجلاتك الأكاديمية الرسمية ونقاط الدرجات.'}
+              </p>
+            </div>
+            {reportData && reportData.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDownloadTranscript}
+                className="flex items-center gap-1.5 px-4 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all active:scale-[0.98]"
+              >
+                <FileText className="w-4 h-4" />
+                <span>{lang === 'en' ? 'Download PDF' : 'تحميل PDF'}</span>
+              </button>
+            )}
+          </div>
+
           {isReportLoading ? (
             <div className="bg-white p-12 rounded-3xl border border-beige-200/80 shadow-premium flex flex-col items-center justify-center">
               <Loader2 className="w-8 h-8 text-mint-500 animate-spin" />
