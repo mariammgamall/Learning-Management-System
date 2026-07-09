@@ -32,6 +32,7 @@ import {
 import Link from 'next/link';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/hooks/useAuthStore';
+import ModalPortal from '@/components/ModalPortal';
 
 const renderAttachedFiles = (fileUrlString: string | null) => {
   if (!fileUrlString) return null;
@@ -1442,7 +1443,8 @@ export default function StudentCourseHub() {
 
       {/* 4. FULLSCREEN QUIZ EXAM MODAL WORKSPACE */}
       {activeQuiz && quizAttempt && (
-        <div className="fixed inset-0 z-[100] bg-neutral-950 p-6 md:p-12 overflow-y-auto flex flex-col justify-between select-none">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] bg-neutral-950 p-6 md:p-12 overflow-y-auto flex flex-col justify-between select-none">
           
           {/* Quiz Top bar */}
           <div className="max-w-4xl w-full mx-auto flex items-center justify-between text-white pb-6 border-b border-neutral-800 flex-shrink-0">
@@ -1554,6 +1556,7 @@ export default function StudentCourseHub() {
           </div>
 
         </div>
+        </ModalPortal>
       )}
 
     </div>
