@@ -269,11 +269,14 @@ model Comment {
 }
 
 model Post {
-  id        String    @id @default(uuid())
-  content   String
-  authorId  String
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  likes     User[]    @relation("UserLikesPost")
-  comments  Comment[]
+  id         String    @id @default(uuid())
+  content    String
+  imageUrl   String?
+  eventTitle String?
+  eventDate  DateTime?
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  likes      User[]    @relation("UserLikesPost")
+  comments   Comment[]
 }

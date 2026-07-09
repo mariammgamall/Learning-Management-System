@@ -1463,16 +1463,16 @@ export default function TACourseWorkspace() {
       {/* TA CONSTRUCT QUIZ MODAL */}
       {isAddQuizOpen && (
         <ModalPortal>
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4 overflow-y-auto">
-            <div className="w-full max-w-2xl bg-white p-6 rounded-2xl shadow-premium border border-beige-200 my-8 space-y-4">
-              <div className="flex justify-between items-center border-b border-beige-100 pb-2">
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl bg-white p-6 rounded-2xl shadow-premium border border-beige-200 my-8 space-y-4 max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center border-b border-beige-100 pb-2 flex-shrink-0">
                 <h3 className="text-sm font-bold text-text-primary">Construct Quiz (TA Desk)</h3>
                 <button onClick={() => setIsAddQuizOpen(false)} className="text-text-secondary hover:text-text-primary">
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleQuizPost} className="space-y-4 text-xs font-semibold">
+              <form onSubmit={handleQuizPost} className="space-y-4 text-xs font-semibold overflow-y-auto flex-1 pr-2">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-primary block">Quiz Title</label>
                   <input

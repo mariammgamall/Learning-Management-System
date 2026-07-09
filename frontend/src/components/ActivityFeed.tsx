@@ -17,6 +17,7 @@ import {
   CornerDownRight,
   MoreHorizontal,
   Share2,
+  X,
 } from 'lucide-react';
 
 interface Author {
@@ -44,6 +45,9 @@ interface Comment {
 interface Post {
   id: string;
   content: string;
+  imageUrl?: string | null;
+  eventTitle?: string | null;
+  eventDate?: string | null;
   createdAt: string;
   author: Author;
   likes: { id: string }[];
@@ -62,6 +66,13 @@ export default function ActivityFeed() {
   const [replyInputs, setReplyInputs] = useState<{ [commentId: string]: string }>({});
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
 
+  // Photo upload and Event state
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [showEventInputs, setShowEventInputs] = useState(false);
+
   // Fetch Feed
   const { data: posts = [], isLoading } = useQuery<Post[]>({
     queryKey: ['feedPosts'],
@@ -73,12 +84,19 @@ export default function ActivityFeed() {
 
   // Create Post Mutation
   const createPostMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await api.post('/posts', { content });
+    mutationFn: async (formData: FormData) => {
+      const response = await api.post('/posts', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       return response.data;
     },
     onSuccess: () => {
       setPostContent('');
+      setSelectedPhoto(null);
+      setPhotoPreviewUrl(null);
+      setEventTitle('');
+      setEventDate('');
+      setShowEventInputs(false);
       queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
       addToast(lang === 'en' ? 'Post shared successfully!' : 'تم نشر مشاركتك بنجاح!', 'success');
     },
@@ -139,8 +157,20 @@ export default function ActivityFeed() {
 
   const handleCreatePost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!postContent.trim()) return;
-    createPostMutation.mutate(postContent.trim());
+    if (!postContent.trim() && !selectedPhoto && !eventTitle) return;
+
+    const formData = new FormData();
+    formData.append('content', postContent.trim());
+    if (selectedPhoto) {
+      formData.append('photo', selectedPhoto);
+    }
+    if (showEventInputs && eventTitle) {
+      formData.append('eventTitle', eventTitle.trim());
+      if (eventDate) {
+        formData.append('eventDate', eventDate);
+      }
+    }
+    createPostMutation.mutate(formData);
   };
 
   const handleLike = (postId: string) => {
@@ -191,20 +221,102 @@ export default function ActivityFeed() {
             />
           </div>
 
-          <div className="flex justify-between items-center pt-2 border-t border-beige-100/60">
-            <div className="flex gap-2">
+          {/* Image Upload Preview */}
+          {photoPreviewUrl && (
+            <div className="relative w-full max-h-60 rounded-2xl overflow-hidden border border-beige-200 my-2">
+              <img src={photoPreviewUrl} alt="Upload preview" className="w-full h-full object-cover" />
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-text-secondary hover:bg-beige-50 rounded-xl text-[10px] font-bold transition-all"
-                onClick={() => addToast('Media upload is disabled on sandbox feed', 'info')}
+                onClick={() => {
+                  setSelectedPhoto(null);
+                  setPhotoPreviewUrl(null);
+                }}
+                className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Event Scheduler Form */}
+          {showEventInputs && (
+            <div className="bg-beige-50/50 p-4 border border-beige-200 rounded-2xl space-y-3 relative my-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEventInputs(false);
+                  setEventTitle('');
+                  setEventDate('');
+                }}
+                className="absolute top-2 right-2 text-text-secondary hover:text-rose-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">
+                {lang === 'en' ? 'Create Event' : 'إنشاء حدث'}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-text-primary block">
+                    {lang === 'en' ? 'Event Title' : 'عنوان الحدث'}
+                  </label>
+                  <input
+                    type="text"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder={lang === 'en' ? 'Seminar, presentation, meeting...' : 'ندوة، عرض تقديمي، اجتماع...'}
+                    className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-text-primary block">
+                    {lang === 'en' ? 'Event Date & Time' : 'تاريخ ووقت الحدث'}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-beige-200 rounded-xl outline-none focus:ring-1 focus:ring-mint-500 bg-white font-semibold text-text-primary"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center pt-2 border-t border-beige-100/60">
+            <div className="flex gap-2">
+              <input
+                type="file"
+                id="post-photo-input"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedPhoto(file);
+                    setPhotoPreviewUrl(URL.createObjectURL(file));
+                  }
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                  photoPreviewUrl ? 'text-indigo-500 bg-indigo-50/50' : 'text-text-secondary hover:bg-beige-50'
+                }`}
+                onClick={() => document.getElementById('post-photo-input')?.click()}
               >
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
                 <span>{lang === 'en' ? 'Photo' : 'صورة'}</span>
               </button>
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-text-secondary hover:bg-beige-50 rounded-xl text-[10px] font-bold transition-all"
-                onClick={() => addToast('Event scheduling is disabled on feed', 'info')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                  showEventInputs ? 'text-amber-500 bg-amber-50/50' : 'text-text-secondary hover:bg-beige-50'
+                }`}
+                onClick={() => setShowEventInputs(!showEventInputs)}
               >
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 <span>{lang === 'en' ? 'Event' : 'حدث'}</span>
@@ -213,7 +325,7 @@ export default function ActivityFeed() {
 
             <button
               type="submit"
-              disabled={createPostMutation.isPending || !postContent.trim()}
+              disabled={createPostMutation.isPending || (!postContent.trim() && !selectedPhoto && !eventTitle)}
               className="px-5 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-xs font-bold shadow-soft transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5"
             >
               {createPostMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -277,9 +389,33 @@ export default function ActivityFeed() {
                 </div>
 
                 {/* Post Content */}
-                <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
-                  {post.content}
-                </p>
+                {post.content && (
+                  <p className="text-xs font-medium text-text-primary leading-relaxed whitespace-pre-line">
+                    {post.content}
+                  </p>
+                )}
+
+                {/* Render Post Image */}
+                {post.imageUrl && (
+                  <div className="rounded-2xl overflow-hidden border border-beige-200 max-h-[350px] w-full flex items-center justify-center bg-beige-50 my-2">
+                    <img src={post.imageUrl} alt="Post Attachment" className="w-full h-full object-cover" />
+                  </div>
+                )}
+
+                {/* Render Post Event */}
+                {post.eventTitle && (
+                  <div className="p-4 bg-amber-50/30 border border-amber-200/60 rounded-2xl flex items-center gap-3.5 my-2">
+                    <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0 text-amber-500 border border-amber-200/50">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <h4 className="text-xs font-extrabold text-text-primary truncate">{post.eventTitle}</h4>
+                      <p className="text-[10px] text-text-secondary font-bold mt-1">
+                        {post.eventDate ? new Date(post.eventDate).toLocaleString() : ''}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Likes / Comments Counts */}
                 <div className="flex justify-between items-center text-[10px] text-text-secondary border-b border-beige-100/60 pb-3 font-semibold">

@@ -1,6 +1,8 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authGuard, AuthenticatedRequest } from '../middlewares/auth';
+import { upload } from '../middlewares/upload';
+import { uploadToCloudinaryOrLocal } from '../utils/cloudinary';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -64,17 +66,27 @@ router.get('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
 
 // @route   POST /api/v1/posts
 // @desc    Create a new feed post
-router.post('/', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', authGuard, upload.single('photo'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { content } = req.body;
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: 'Post content cannot be empty' });
+    const { content, eventTitle, eventDate } = req.body;
+    
+    // Check if the post is completely empty (no text, no photo, and no event)
+    if ((!content || !content.trim()) && !req.file && !eventTitle) {
+      return res.status(400).json({ message: 'Post content, photo, or event title is required' });
+    }
+
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = await uploadToCloudinaryOrLocal(req.file, 'posts');
     }
 
     const newPost = await prisma.post.create({
       data: {
-        content: content.trim(),
+        content: content ? content.trim() : '',
         authorId: req.user!.id,
+        imageUrl,
+        eventTitle: eventTitle || null,
+        eventDate: eventDate ? new Date(eventDate) : null,
       },
       include: {
         author: {
