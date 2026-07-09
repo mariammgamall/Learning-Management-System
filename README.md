@@ -63,7 +63,28 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
     - **Physical Attendees List**: Real-time attendees list using backend join/leave REST endpoints to track students physically inside the virtual room.
     - **Light Mode UI**: Refactored control footer buttons to use a clean mint-theme palette (`bg-mint-100 border-mint-200 text-mint-600`) when active, avoiding black overlays.
     - **Stateful Recording**: Pressing the recording button toggles a blinking red dot, and clicking it a second time downloads the mock compiled log.
-    - **Screen Sharing**: Native browser screen sharing enabled via `navigator.mediaDevices.getDisplayMedia`.
+    - Screen Sharing: Native browser screen sharing enabled via `navigator.mediaDevices.getDisplayMedia`.
+
+*   **📣 Course Announcements & Rich Text Editing**:
+    - **Publisher Metadata**: Publisher names are prominently stamped on every posted course announcement (indicating whether it was posted by a Doctor or a TA).
+    - **Announcements Toolbar**: Features a full-fledged rich text editing toolbar (**Bold**, *Italic*, Underline, and Highlight) using an integrated `TiptapEditor`.
+    - **HTML Rendering**: Secure HTML template injection formats the post sentences beautifully in both light and dark modes.
+    - **Comments & Replies**: Students can leave public or private comments, and instructors (Doctors/TAs) can reply to student threads inline.
+
+*   **📝 Flexible Quiz Builder & Student Attempt Workspace**:
+    - **MCQ, True/False & Short Answer**: Supported three question types in the quiz constructor inside both Doctor and TA portals. Pick correct answers via True/False dropdowns or define grading criteria in textareas.
+    - **Manual Grading**: Doctors and TAs can review and grade essay/short answer attempts manually using an overwrite score dialog.
+    - **Submit Button Fix**: Integrated a floating quiz layout wrapped inside Next.js portal boundaries to guarantee the submit button is never hidden by the floating AI assistant widget.
+
+*   **📊 Student Profile, Academic Transcript & PDF Report**:
+    - **Yearly Transcript Filter**: Students can view all courses, grades, and marks filtered by enrollment year or all years combined.
+    - **Downloadable Transcript Report**: Dynamic print generation that outputs a high-fidelity PDF transcript with registrar/dean signature seals.
+    - **Personal Development Plan**: Suggests customized careers, technical roadmaps, and personal development steps based on the student's selected interests (e.g. Frontend, Cybersecurity, AI).
+
+*   **📱 Dedicated Social Activity Feed**:
+    - **Unified Feed**: Created a single tab for the social hub at `/dashboard/feed`, accessible to Admins, Doctors, TAs, and Students.
+    - **Actions**: Includes **Like** triggers, expanding inline **Comment** drawers (with reply threads), and **Share** (copies link to clipboard with active toast alerts).
+    - **Seeded Data**: Seeded database with **20 high-quality discussions** by Doctors and TAs on subjects like consistency, UI/UX, mechanical engineering, and robotics, populated with realistic comments and likes from all users.
 
 ---
 
