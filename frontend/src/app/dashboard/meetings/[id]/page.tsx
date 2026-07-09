@@ -46,6 +46,7 @@ export default function MeetingRoomPage() {
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef(false);
 
   // Chat states & UI configurations
   const [chatInput, setChatInput] = useState('');
@@ -179,6 +180,7 @@ export default function MeetingRoomPage() {
 
   // Sync join/leave state with backend activeAttendee registry
   useEffect(() => {
+    isMountedRef.current = true;
     const joinCall = async () => {
       try {
         await api.post(`/meetings/${meetingId}/join`);
@@ -194,7 +196,12 @@ export default function MeetingRoomPage() {
 
     return () => {
       clearInterval(interval);
-      api.post(`/meetings/${meetingId}/leave`).catch(console.error);
+      isMountedRef.current = false;
+      setTimeout(() => {
+        if (!isMountedRef.current) {
+          api.post(`/meetings/${meetingId}/leave`).catch(console.error);
+        }
+      }, 1000);
     };
   }, [meetingId]);
 
@@ -481,15 +488,15 @@ Status: Successfully Recorded and Compiled.`;
             <div className={`aspect-video border rounded-2xl relative overflow-hidden flex items-center justify-center shadow-lg ${
               theme === 'dark' ? 'bg-neutral-900 border-neutral-850' : 'bg-white border-beige-200'
             }`}>
-              {cameraOn ? (
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover rounded-2xl scale-x-[-1]"
-                />
-              ) : (
+              <video
+                ref={localVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className={`w-full h-full object-cover rounded-2xl scale-x-[-1] ${cameraOn ? 'block' : 'hidden'}`}
+              />
+              
+              {!cameraOn && (
                 <div className="flex flex-col items-center gap-3">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center border font-extrabold text-xl animate-pulse ${
                     theme === 'dark'
@@ -713,7 +720,7 @@ Status: Successfully Recorded and Compiled.`;
         
         {/* Left: Indicator details */}
         <div className="hidden md:block text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-          {lang === 'en' ? 'Status' : 'الحالة'}: <span className="text-mint-500 font-black animate-pulse">{lang === 'en' ? 'STABLE RTC CONNECTION' : 'اتصال مستقر'}</span>
+          {lang === 'en' ? 'Status' : 'الحالة'}: <span className="text-mint-500 font-black animate-pulse">{lang === 'en' ? 'SANDBOX RTC SIMULATOR (LOCAL ONLY)' : 'محاكي اتصال محلي'}</span>
         </div>
 
         {/* Center: Device controls */}
