@@ -129,7 +129,9 @@ export default function ActivityFeed() {
     if (!text || !text.trim()) return;
     setTranslatingPostId(postId);
     try {
-      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|ar`);
+      const isArabic = /[\u0600-\u06FF]/.test(text);
+      const langpair = isArabic ? 'ar|en' : 'en|ar';
+      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`);
       const data = await response.json();
       if (data?.responseData?.translatedText) {
         setTranslatedPosts((prev) => ({
@@ -160,6 +162,7 @@ export default function ActivityFeed() {
     const isTranslated = !!translatedPosts[postId];
     const isTranslating = translatingPostId === postId;
     const displayText = isTranslated ? translatedPosts[postId] : content;
+    const isArabic = /[\u0600-\u06FF]/.test(content);
 
     return (
       <div className="space-y-1 text-left">
@@ -188,7 +191,11 @@ export default function ActivityFeed() {
               className="text-text-secondary hover:text-mint-500 text-[10px] font-bold flex items-center gap-1 transition-all"
             >
               <Languages className="w-3.5 h-3.5" />
-              <span>{lang === 'en' ? 'Translate to Arabic' : 'ترجم إلى العربية'}</span>
+              <span>
+                {isArabic
+                  ? (lang === 'en' ? 'Translate to English' : 'ترجم إلى الإنجليزية')
+                  : (lang === 'en' ? 'Translate to Arabic' : 'ترجم إلى العربية')}
+              </span>
             </button>
           )}
         </div>
