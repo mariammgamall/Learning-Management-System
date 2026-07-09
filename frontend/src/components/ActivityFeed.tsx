@@ -98,6 +98,16 @@ export default function ActivityFeed() {
     },
   });
 
+  const filteredPosts = posts.filter((post) => {
+    if (activeFeedTab === 'saved') {
+      return post.savedBy?.some((u) => u.id === user?.id);
+    }
+    if (activeFeedTab === 'reposts') {
+      return post.repostOfId !== null && post.author.id === user?.id;
+    }
+    return true; // 'all'
+  });
+
   // Create Post Mutation
   const createPostMutation = useMutation({
     mutationFn: async (formData: FormData) => {
