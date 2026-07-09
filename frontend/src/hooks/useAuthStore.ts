@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: 'ADMIN' | 'DOCTOR' | 'TA' | 'STUDENT';
   profilePhoto?: string | null;
+  interests?: string | null;
 }
 
 interface AuthState {

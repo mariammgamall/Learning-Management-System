@@ -26,6 +26,7 @@ router.get('/profile', authGuard, async (req: AuthenticatedRequest, res: Respons
         role: true,
         profilePhoto: true,
         createdAt: true,
+        interests: true,
       },
     });
     if (!user) {
@@ -42,7 +43,7 @@ router.get('/profile', authGuard, async (req: AuthenticatedRequest, res: Respons
 // @desc    Update current logged-in user's profile info, email & photo
 router.put('/profile', authGuard, upload.single('profilePhoto'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, interests } = req.body;
     const userId = req.user!.id;
 
     const data: any = {};
@@ -75,6 +76,10 @@ router.put('/profile', authGuard, upload.single('profilePhoto'), async (req: Aut
       data.profilePhoto = await uploadToCloudinaryOrLocal(req.file, 'avatars');
     }
 
+    if (interests !== undefined) {
+      data.interests = interests.trim();
+    }
+
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ message: 'No profile details provided for update' });
     }
@@ -89,6 +94,7 @@ router.put('/profile', authGuard, upload.single('profilePhoto'), async (req: Aut
         role: true,
         profilePhoto: true,
         createdAt: true,
+        interests: true,
       },
     });
 
@@ -98,6 +104,49 @@ router.put('/profile', authGuard, upload.single('profilePhoto'), async (req: Aut
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   GET /api/v1/users/student-report
+// @desc    Get detailed student academic transcript and grades report
+router.get('/student-report', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (req.user!.role !== Role.STUDENT) {
+      return res.status(403).json({ message: 'Only students can request academic reports' });
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { studentId: req.user!.id },
+      include: {
+        course: {
+          include: {
+            doctor: { select: { id: true, name: true } },
+            assignments: {
+              include: {
+                submissions: {
+                  where: { studentId: req.user!.id }
+                }
+              }
+            },
+            quizzes: {
+              include: {
+                attempts: {
+                  where: { studentId: req.user!.id }
+                }
+              }
+            },
+            attendances: {
+              where: { studentId: req.user!.id }
+            }
+          }
+        }
+      }
+    });
+
+    return res.status(200).json(enrollments);
+  } catch (error) {
+    console.error('Fetch student report error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

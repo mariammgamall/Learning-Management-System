@@ -18,6 +18,7 @@ model User {
   profilePhoto  String?
   resetToken    String?
   resetTokenExpires DateTime?
+  interests     String?
   
   // Relations
   courses       Course[]         @relation("DoctorCourses")

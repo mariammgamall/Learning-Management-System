@@ -4,8 +4,24 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { useToastStore } from '@/hooks/useToastStore';
 import { api } from '@/utils/api';
-import { useMutation } from '@tanstack/react-query';
-import { Loader2, Camera, Trash2, Eye, ArrowLeft, User, Mail, Shield, Calendar } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  Loader2,
+  Camera,
+  Trash2,
+  Eye,
+  ArrowLeft,
+  User,
+  Mail,
+  Shield,
+  Calendar,
+  BookOpen,
+  Award,
+  Sparkles,
+  CheckCircle,
+  ExternalLink,
+  ChevronRight,
+} from 'lucide-react';
 import Link from 'next/link';
 import ModalPortal from '@/components/ModalPortal';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -15,9 +31,167 @@ export default function ProfilePage() {
   const { addToast } = useToastStore();
   const { t, lang } = useTranslation();
 
+  const [activeTab, setActiveTab] = useState<'info' | 'transcript' | 'career'>('info');
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [interests, setInterests] = useState(user?.interests || '');
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // 1. Fetch Academic Report (if student)
+  const { data: reportData = [], isLoading: isReportLoading } = useQuery({
+    queryKey: ['studentReport'],
+    queryFn: async () => {
+      const response = await api.get('/users/student-report');
+      return response.data;
+    },
+    enabled: user?.role === 'STUDENT',
+  });
+
+  const getEnrollmentYear = (enrolledAt: string) => {
+    const date = new Date(enrolledAt);
+    return date.getFullYear();
+  };
+
+  const coursesByYear: { [key: number]: any[] } = {};
+  if (user?.role === 'STUDENT' && Array.isArray(reportData)) {
+    reportData.forEach((item: any) => {
+      if (item && item.course) {
+        const year = getEnrollmentYear(item.enrolledAt);
+        if (!coursesByYear[year]) {
+          coursesByYear[year] = [];
+        }
+        coursesByYear[year].push(item);
+      }
+    });
+  }
+
+  const calculateOverallCourseGrade = (assignments: any[] = [], quizzes: any[] = []) => {
+    let totalGrade = 0;
+    let count = 0;
+    
+    assignments.forEach((a: any) => {
+      const sub = a.submissions?.[0];
+      if (sub && sub.grade !== null) {
+        totalGrade += (sub.grade / a.maxScore) * 100;
+        count++;
+      }
+    });
+    
+    quizzes.forEach((q: any) => {
+      const attempt = q.attempts?.[0];
+      if (attempt && attempt.score !== null) {
+        totalGrade += attempt.score;
+        count++;
+      }
+    });
+    
+    return count > 0 ? Math.round(totalGrade / count) : null;
+  };
+
+  const generateDevPlan = (interestsString: string) => {
+    const interests = (interestsString || '').toLowerCase();
+    
+    let pathTitle = '';
+    let description = '';
+    let skills = [] as string[];
+    let resources = [] as string[];
+    let projects = [] as string[];
+    let coursesList = [] as string[];
+
+    if (interests.includes('web') || interests.includes('frontend') || interests.includes('react') || interests.includes('next') || interests.includes('html') || interests.includes('javascript')) {
+      pathTitle = lang === 'en' ? 'Frontend & Modern Web Engineering' : 'هندسة الويب والواجهات الأمامية الحديثة';
+      description = lang === 'en'
+        ? 'A structured pathway for mastering responsive user interfaces, client-side state management, and production-ready applications.'
+        : 'مسار منظم لإتقان واجهات المستخدم المتجاوبة، وإدارة الحالة في المتصفح، وبناء تطبيقات جاهزة للإنتاج.';
+      skills = ['HTML5 & CSS3', 'JavaScript (ES6+)', 'TypeScript', 'React.js & Next.js Frameworks', 'Tailwind CSS', 'RESTful APIs & GraphQL Development', 'Git & GitHub'];
+      coursesList = ['Advanced JavaScript & Web APIs', 'React - The Complete Guide', 'Next.js App Router Architecture', 'Responsive Web Design & Tailwind CSS'];
+      projects = [
+        lang === 'en' ? 'Portfolio Website: Create a premium glassmorphic portfolio displaying your certificates.' : 'موقع معرض الأعمال: تصميم موقع مميز يعرض شهاداتك وإنجازاتك.',
+        lang === 'en' ? 'E-Commerce Platform: Build a full storefront with cart state management and filter queries.' : 'منصة تجارة إلكترونية: بناء متجر متكامل مع إدارة حالة السلة واستعلامات التصفية.',
+        lang === 'en' ? 'LMS Student Portal Dashboard: Build a replica of your favorite dashboard using mock data.' : 'لوحة تحكم طالب LMS: محاكاة لوحة التحكم المفضلة لديك باستخدام بيانات وهمية.'
+      ];
+      resources = [
+        'MDN Web Docs (Mozilla Developer Network)',
+        'React Official Documentation (react.dev)',
+        'Next.js Learn Path (nextjs.org/learn)',
+        'Frontend Masters / freeCodeCamp tutorials'
+      ];
+    } else if (interests.includes('ai') || interests.includes('ml') || interests.includes('data') || interests.includes('machine') || interests.includes('python') || interests.includes('deep')) {
+      pathTitle = lang === 'en' ? 'Artificial Intelligence & Data Science Specialist' : 'أخصائي الذكاء الاصطناعي وعلوم البيانات';
+      description = lang === 'en'
+        ? 'A mathematically-grounded route covering statistical analysis, supervised learning algorithms, neural network design, and data science workflows.'
+        : 'مسار مبني على أسس رياضية يغطي التحليل الإحصائي، وخوارزميات التعلم الخاضع للإشراف، وتصميم الشبكات العصبية، ومراحل العمل في علوم البيانات.';
+      skills = ['Python (NumPy, Pandas, Matplotlib)', 'SQL & Database Design', 'Scikit-Learn (Supervised/Unsupervised)', 'TensorFlow or PyTorch', 'Data Preprocessing', 'Linear Algebra & Calculus'];
+      coursesList = ['Python Programming for Data Science', 'Machine Learning Core Concepts', 'Deep Learning & Neural Networks', 'Practical Database Administration & SQL'];
+      projects = [
+        lang === 'en' ? 'House Price Predictor: Build a multivariate linear regression model utilizing Scikit-learn.' : 'متنبئ أسعار العقارات: بناء نموذج انحدار خطي متعدد المتغيرات باستخدام Scikit-learn.',
+        lang === 'en' ? 'Customer Segmentation: Apply K-means clustering to analyze retail customer behavior.' : 'تصنيف العملاء: تطبيق خوارزمية K-means لتحليل سلوكيات عملاء التجزئة.',
+        lang === 'en' ? 'Image Classifier: Train a Convolutional Neural Network (CNN) to categorize handwritten digits.' : 'مصنف الصور: تدريب شبكة عصبية تلافيفية (CNN) لتصنيف الأرقام المكتوبة بخط اليد.'
+      ];
+      resources = [
+        'Kaggle Datasets & Jupyter Notebooks',
+        'Scikit-Learn Documentation (scikit-learn.org)',
+        '3Blue1Brown Deep Learning Series (YouTube)',
+        'Fast.ai Practical Deep Learning for Coders'
+      ];
+    } else if (interests.includes('cyber') || interests.includes('security') || interests.includes('network') || interests.includes('penetration') || interests.includes('linux')) {
+      pathTitle = lang === 'en' ? 'Cybersecurity Analyst & Penetration Tester' : 'محلل الأمن السيبراني واختبار الاختراق';
+      description = lang === 'en'
+        ? 'A route focused on threat mitigation, cryptography, defensive architecture, and systematic vulnerability assessments.'
+        : 'مسار يركز على الحد من التهديدات، علم التشفير، تصميم البنية الدفاعية، والتقييم المنظم للثغرات الأمنية.';
+      skills = ['Linux Administration (Bash scripting)', 'Networking Fundamentals (TCP/IP, DNS, Routing)', 'Cryptography Foundations', 'OWASP Top 10 Vulnerabilities', 'Wireshark & Network Traffic Analysis', 'Metasploit & Nmap Essentials'];
+      coursesList = ['Introduction to Computer Networks', 'Applied Cryptography & Security Protocols', 'Ethical Hacking & Vulnerability Assessment', 'Linux System Administration'];
+      projects = [
+        lang === 'en' ? 'Network Scanner Tool: Build a custom Python script to scan network ports safely.' : 'أداة مسح الشبكات: بناء سكربت بايثون مخصص لمسح منافذ الشبكة بشكل آمن.',
+        lang === 'en' ? 'Vulnerable VM Exploitation: Set up a sandbox VM and perform documented penetration testing.' : 'اختراق جهاز افتراضي ضعيف: إعداد بيئة معزولة وإجراء اختبار اختراق موثق.',
+        lang === 'en' ? 'Secure Login Module: Implement a registration screen using bcrypt hashing and JWT tokens.' : 'وحدة تسجيل دخول آمنة: تنفيذ شاشة تسجيل مستخدم باستخدام تشفير bcrypt ورموز JWT.'
+      ];
+      resources = [
+        'OWASP Foundation Documentation (owasp.org)',
+        'TryHackMe & Hack The Box Laboratories',
+        'PortSwigger Web Security Academy',
+        'Linux Command Line Bible / OverTheWire Wargames'
+      ];
+    } else if (interests.includes('mobile') || interests.includes('android') || interests.includes('ios') || interests.includes('flutter') || interests.includes('native')) {
+      pathTitle = lang === 'en' ? 'Cross-Platform Mobile Developer' : 'مطور تطبيقات الهاتف المحمول';
+      description = lang === 'en'
+        ? 'A comprehensive roadmap for designing native-feeling mobile applications running on iOS and Android devices.'
+        : 'خارطة طريق شاملة لتصميم تطبيقات الهاتف المحمول ذات الطابع الأصلي التي تعمل على أجهزة iOS و Android.';
+      skills = ['Dart & Flutter Framework', 'React Native & Expo', 'Mobile UI/UX Layout Rules', 'State Management (Provider, Bloc, Redux)', 'Device API Integration (GPS, Camera)', 'App Store & Google Play Deployment'];
+      coursesList = ['Flutter for Beginners', 'React Native Core Architecture', 'Mobile UX Best Practices', 'Deploying and Monetizing Mobile Apps'];
+      projects = [
+        lang === 'en' ? 'Weather App: Build a mobile app utilizing GPS location APIs to show weather forecasts.' : 'تطبيق الطقس: بناء تطبيق هاتف يعتمد على نظام تحديد المواقع الجغرافي لعرض توقعات الطقس.',
+        lang === 'en' ? 'Notes App with SQLite: Create a locally stored note-taking application.' : 'تطبيق ملاحظات بقاعدة بيانات SQLite: إنشاء تطبيق لتدوين الملاحظات مع حفظ محلي.',
+        lang === 'en' ? 'Social Chat App: Build a mobile client using WebSocket connections for instant messages.' : 'تطبيق محادثة اجتماعي: بناء تطبيق جوال يستخدم اتصالات WebSocket للرسائل الفورية.'
+      ];
+      resources = [
+        'Flutter Official Docs (flutter.dev)',
+        'React Native Official Docs (reactnative.dev)',
+        'Reso Coder Flutter Tutorials (YouTube)',
+        'Google Codelabs for Android / Apple Developer Docs'
+      ];
+    } else {
+      pathTitle = lang === 'en' ? 'Software Engineer & Computer Science Core' : 'مهندس برمجيات وتخصص علوم الحاسب';
+      description = lang === 'en'
+        ? 'A robust software engineering track focusing on data structures, algorithmic efficiency, clean code, and database modeling.'
+        : 'مسار قوي في هندسة البرمجيات يركز على هياكل البيانات، كفاءة الخوارزميات، كتابة الكود النظيف، ونمذجة قواعد البيانات.';
+      skills = ['Object-Oriented Programming (Java/C++)', 'Data Structures (Lists, Trees, Graphs)', 'Sorting & Searching Algorithms', 'System Architecture & Design Patterns', 'SQL Database Modeling', 'Unit Testing & CI/CD Pipelines'];
+      coursesList = ['Introduction to Algorithms & Complexities', 'Object-Oriented Design Patterns', 'Relational Database Systems', 'Software Engineering Lifecycle & Testing'];
+      projects = [
+        lang === 'en' ? 'Task Manager CLI: Build a command-line tool with sorting algorithms to schedule events.' : 'أداة إدارة المهام CLI: بناء أداة سطر أوامر مع خوارزميات ترتيب لجدولة المواعيد.',
+        lang === 'en' ? 'Library DBMS: Model and build a functional relational database for library items.' : 'نظام إدارة قواعد بيانات المكتبة: نمذجة وبناء قاعدة بيانات علائقية لإعارة الكتب.',
+        lang === 'en' ? 'Compiler Parser: Build a simple lexical analyzer to parse arithmetic equations.' : 'محلل برمجي معادلات: بناء محلل معجمي بسيط لتحليل المعادلات الحسابية.'
+      ];
+      resources = [
+        'LeetCode & HackerRank Problems',
+        'Clean Code by Robert C. Martin (Book)',
+        'GeeksforGeeks Computer Science Portal',
+        'MIT OpenCourseWare - Introduction to Algorithms'
+      ];
+    }
+
+    return { pathTitle, description, skills, resources, projects, coursesList };
+  };
 
   // Profile Update Mutation (handles name change and photo upload)
   const updateProfileMutation = useMutation({
@@ -70,6 +244,7 @@ export default function ProfilePage() {
     const formData = new FormData();
     formData.append('name', name.trim());
     formData.append('email', email.trim().toLowerCase());
+    formData.append('interests', interests.trim());
     updateProfileMutation.mutate(formData);
   };
 
@@ -109,7 +284,35 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-beige-200/80 shadow-premium space-y-8">
+      {user.role === 'STUDENT' && (
+        <div className="flex gap-2 border-b border-beige-200 pb-px overflow-x-auto whitespace-nowrap scrollbar-none">
+          {[
+            { id: 'info', label: lang === 'en' ? 'Profile Details' : 'بيانات الحساب', icon: User },
+            { id: 'transcript', label: lang === 'en' ? 'Academic Transcript' : 'السجل الأكاديمي', icon: Award },
+            { id: 'career', label: lang === 'en' ? 'Development Plan' : 'خطة التطوير الشخصية', icon: Sparkles },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 border-b-2 text-xs font-bold transition-all ${
+                  isActive
+                    ? 'border-b-mint-500 text-mint-500'
+                    : 'border-b-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab === 'info' && (
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-beige-200/80 shadow-premium space-y-8">
         {/* Avatar Area */}
         <div className="flex flex-col items-center sm:flex-row gap-6 pb-6 border-b border-beige-100">
           <div className="relative group">
@@ -208,6 +411,30 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {user.role === 'STUDENT' && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-text-secondary uppercase">
+                {lang === 'en' ? 'Interests / Career Focus' : 'الاهتمامات / التركيز المهني'}
+              </label>
+              <textarea
+                value={interests}
+                onChange={(e) => setInterests(e.target.value)}
+                rows={3}
+                placeholder={
+                  lang === 'en'
+                    ? "e.g., Web Development, Machine Learning, iOS apps, Cybersecurity..."
+                    : "مثال: تطوير الويب، التعلم الآلي، تطبيقات آيفون، الأمن السيبراني..."
+                }
+                className="w-full px-4 py-3 bg-beige-50/50 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
+              />
+              <p className="text-[10px] text-text-secondary font-medium mt-1">
+                {lang === 'en'
+                  ? '* Interests are used to automatically generate your suggested Personal Development Plan.'
+                  : '* تُستخدم الاهتمامات لإنشاء خطة التطوير الشخصية المقترحة لك تلقائياً.'}
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end pt-4">
             <button
               type="submit"
@@ -220,6 +447,233 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
+      )}
+
+      {activeTab === 'transcript' && (
+        <div className="space-y-6 animate-fade-in">
+          {isReportLoading ? (
+            <div className="bg-white p-12 rounded-3xl border border-beige-200/80 shadow-premium flex flex-col items-center justify-center">
+              <Loader2 className="w-8 h-8 text-mint-500 animate-spin" />
+            </div>
+          ) : reportData.length === 0 ? (
+            <div className="bg-white p-12 rounded-3xl border border-beige-200/80 shadow-premium text-center text-text-secondary">
+              {lang === 'en' ? 'You are not enrolled in any courses yet.' : 'لم تقم بالتسجيل في أي مقررات بعد.'}
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.keys(coursesByYear).sort((a, b) => Number(b) - Number(a)).map((yearStr) => {
+                const year = Number(yearStr);
+                const enrollments = coursesByYear[year];
+                return (
+                  <div key={year} className="bg-white p-6 rounded-3xl border border-beige-200/80 shadow-premium space-y-4">
+                    <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider border-b border-beige-100 pb-2 flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-mint-500" /> {lang === 'en' ? `Academic Year ${year}` : `العام الدراسي ${year}`}
+                    </h3>
+
+                    <div className="space-y-4">
+                      {enrollments.map((enr: any) => {
+                        const course = enr.course;
+                        const overall = calculateOverallCourseGrade(course.assignments, course.quizzes);
+                        const presentCount = course.attendances.filter((att: any) => att.status === 'PRESENT').length;
+                        const totalAtt = course.attendances.length;
+                        const attendanceRate = totalAtt > 0 ? Math.round((presentCount / totalAtt) * 100) : null;
+
+                        return (
+                          <div key={enr.id} className="p-4 bg-beige-50/50 border border-beige-200 rounded-2xl space-y-3">
+                            <div className="flex justify-between items-start flex-wrap gap-2">
+                              <div>
+                                <span className="text-[9px] font-black px-2 py-0.5 bg-mint-100 text-mint-500 rounded-md">
+                                  {course.code}
+                                </span>
+                                <h4 className="font-extrabold text-xs text-text-primary mt-1">{course.title}</h4>
+                                <span className="text-[10px] text-text-secondary leading-none">
+                                  {lang === 'en' ? `Instructor: ${course.doctor?.name}` : `المحاضر: ${course.doctor?.name}`}
+                                </span>
+                              </div>
+
+                              <div className="text-right">
+                                <span className="text-[9px] text-text-secondary block font-bold uppercase tracking-wider">
+                                  {lang === 'en' ? 'Course Score' : 'مجموع الدرجات'}
+                                </span>
+                                <span className={`text-sm font-black ${
+                                  overall !== null 
+                                    ? overall >= 85 ? 'text-mint-500' : overall >= 60 ? 'text-indigo-500' : 'text-rose-500'
+                                    : 'text-text-secondary'
+                                }`}>
+                                  {overall !== null ? `${overall}%` : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Details Accordion style */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-beige-100 text-[11px] font-medium text-text-primary">
+                              {/* Assignments List */}
+                              <div className="space-y-1.5">
+                                <span className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">
+                                  {lang === 'en' ? 'Assignments' : 'التكليفات'}
+                                </span>
+                                {course.assignments.length === 0 ? (
+                                  <p className="text-[10px] text-text-secondary italic">No assignments.</p>
+                                ) : (
+                                  <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                                    {course.assignments.map((a: any) => {
+                                      const sub = a.submissions?.[0];
+                                      return (
+                                        <div key={a.id} className="flex justify-between items-center text-[10px]">
+                                          <span className="truncate max-w-[150px]">{a.title}</span>
+                                          <span className="font-bold text-text-secondary">
+                                            {sub ? `${sub.grade || 0}/${a.maxScore}` : 'Unsubmitted'}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Quizzes List */}
+                              <div className="space-y-1.5">
+                                <span className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">
+                                  {lang === 'en' ? 'Quizzes' : 'الاختبارات'}
+                                </span>
+                                {course.quizzes.length === 0 ? (
+                                  <p className="text-[10px] text-text-secondary italic">No quizzes.</p>
+                                ) : (
+                                  <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                                    {course.quizzes.map((q: any) => {
+                                      const attempt = q.attempts?.[0];
+                                      return (
+                                        <div key={q.id} className="flex justify-between items-center text-[10px]">
+                                          <span className="truncate max-w-[150px]">{q.title}</span>
+                                          <span className="font-bold text-text-secondary">
+                                            {attempt ? `${attempt.score || 0}%` : 'Unattempted'}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Additional metadata info */}
+                            <div className="pt-2 border-t border-beige-100/50 flex justify-between items-center text-[9.5px] text-text-secondary">
+                              <span>
+                                {lang === 'en' ? 'Enrolled: ' : 'تاريخ التسجيل: '}
+                                {new Date(enr.enrolledAt).toLocaleDateString()}
+                              </span>
+                              <span>
+                                {lang === 'en' ? `Attendance: ` : `نسبة الحضور: `}
+                                <strong className="text-text-primary">
+                                  {attendanceRate !== null ? `${attendanceRate}% (${presentCount}/${totalAtt})` : 'N/A'}
+                                </strong>
+                              </span>
+                            </div>
+
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'career' && (
+        <div className="space-y-6 animate-fade-in">
+          {(!user.interests || !user.interests.trim()) ? (
+            <div className="bg-white p-8 rounded-3xl border border-beige-200/80 shadow-premium text-center text-text-secondary space-y-3">
+              <p className="text-xs font-medium">
+                {lang === 'en'
+                  ? 'Please specify your tech interests or career goals in the "Profile Details" tab first to generate your custom Personal Development Plan.'
+                  : 'يرجى تحديد اهتماماتك التقنية أو أهدافك المهنية في علامة تبويب "بيانات الحساب" أولاً لإنشاء خطة التطوير الشخصية المخصصة لك.'}
+              </p>
+              <button
+                onClick={() => setActiveTab('info')}
+                className="px-4 py-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all"
+              >
+                {lang === 'en' ? 'Go to Profile Details' : 'اذهب إلى بيانات الحساب'}
+              </button>
+            </div>
+          ) : (
+            (() => {
+              const plan = generateDevPlan(user.interests);
+              return (
+                <div className="bg-white p-6 md:p-8 rounded-3xl border border-beige-200/80 shadow-premium space-y-6 text-text-primary">
+                  <div className="border-b border-beige-100 pb-4 space-y-2">
+                    <div className="flex items-center gap-1.5 text-mint-500">
+                      <Sparkles className="w-5 h-5 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Suggested Development Pathway</span>
+                    </div>
+                    <h3 className="text-base font-black text-text-primary">{plan.pathTitle}</h3>
+                    <p className="text-xs text-text-secondary leading-relaxed font-medium">{plan.description}</p>
+                  </div>
+
+                  {/* Skills Section */}
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Recommended Skills to Master</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {plan.skills.map((skill, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-mint-50 text-mint-600 rounded-lg text-[10px] font-extrabold border border-mint-100">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Suggested Projects */}
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Suggested Practical Projects</h4>
+                    <div className="space-y-2">
+                      {plan.projects.map((proj, idx) => (
+                        <div key={idx} className="p-3 bg-beige-50/50 rounded-xl border border-beige-200 flex items-start gap-2 text-xs font-semibold">
+                          <CheckCircle className="w-4 h-4 text-mint-500 mt-0.5 flex-shrink-0" />
+                          <span className="leading-relaxed">{proj}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* recommended internal courses */}
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Recommended Academy Curriculum Courses</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {plan.coursesList.map((course, idx) => (
+                        <div key={idx} className="p-3 border border-beige-100 rounded-xl flex items-center justify-between text-xs font-extrabold bg-white">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center font-bold text-[10px]">
+                              {idx + 1}
+                            </div>
+                            <span>{course}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* External Resources */}
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Top External References & Guides</h4>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-text-secondary">
+                      {plan.resources.map((res, idx) => (
+                        <li key={idx} className="flex items-center gap-1.5 hover:text-mint-500 transition-colors">
+                          <ExternalLink className="w-3.5 h-3.5 text-beige-400" />
+                          <span>{res}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                </div>
+              );
+            })()
+          )}
+        </div>
+      )}
 
       {/* Lightbox Portal */}
       {isLightboxOpen && user.profilePhoto && (
