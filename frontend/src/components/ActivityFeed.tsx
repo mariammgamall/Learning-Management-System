@@ -129,14 +129,36 @@ export default function ActivityFeed() {
     if (!text || !text.trim()) return;
     setTranslatingPostId(postId);
     try {
+      const normalizedText = text.trim().replace(/\r\n/g, '\n');
+      
+      // Look up static translations first (for the 20 seed posts)
+      const staticTranslation = SEED_POSTS_TRANSLATIONS[normalizedText];
+      if (staticTranslation) {
+        setTranslatedPosts((prev) => ({
+          ...prev,
+          [postId]: staticTranslation,
+        }));
+        return;
+      }
+
       const isArabic = /[\u0600-\u06FF]/.test(text);
       const langpair = isArabic ? 'ar|en' : 'en|ar';
       const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`);
       const data = await response.json();
-      if (data?.responseData?.translatedText) {
+      let translatedText = data?.responseData?.translatedText;
+      
+      if (translatedText) {
+        // Correct potential translation issue where "experiences" or "experience" turns into "سفر" in Arabic
+        if (text.toLowerCase().includes('experience') && /سفر|السفر|أسفار/.test(translatedText)) {
+          translatedText = translatedText
+            .replace(/\bالسفر\b/g, 'التجارب')
+            .replace(/\bسفر\b/g, 'تجارب')
+            .replace(/\bأسفار\b/g, 'تجارب');
+        }
+        
         setTranslatedPosts((prev) => ({
           ...prev,
-          [postId]: data.responseData.translatedText,
+          [postId]: translatedText,
         }));
       } else {
         addToast(lang === 'en' ? 'Failed to translate' : 'فشلت الترجمة', 'error');
@@ -403,6 +425,36 @@ export default function ActivityFeed() {
 
   return (
     <div className="space-y-6">
+      {/* Feed Tabs Selector */}
+      <div className="flex gap-2 border-b border-beige-200 pb-px mb-4">
+        {[
+          { id: 'all', label: lang === 'en' ? 'All Feed' : 'الرئيسية', icon: Compass },
+          { id: 'my-posts', label: lang === 'en' ? 'My Posts' : 'منشوراتي', icon: User },
+          { id: 'saved', label: lang === 'en' ? 'Bookmarks' : 'المنشورات المحفوظة', icon: Bookmark },
+          { id: 'reposts', label: lang === 'en' ? 'My Reposts' : 'إعادات النشر الخاصة بي', icon: Repeat },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeFeedTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveFeedTab(tab.id as any);
+                setActiveMenuPostId(null);
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-xs font-bold transition-all outline-none ${
+                isActive
+                  ? 'border-b-mint-500 text-mint-500'
+                  : 'border-b-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* 1. Create Post Card */}
       <div className="bg-white p-5 rounded-3xl border border-beige-200/80 shadow-soft">
         <form onSubmit={handleCreatePost} className="space-y-4">
@@ -581,35 +633,7 @@ export default function ActivityFeed() {
         </form>
       </div>
 
-      {/* Feed Tabs Selector */}
-      <div className="flex gap-2 border-b border-beige-200 pb-px mb-4">
-        {[
-          { id: 'all', label: lang === 'en' ? 'All Feed' : 'الرئيسية', icon: Compass },
-          { id: 'my-posts', label: lang === 'en' ? 'My Posts' : 'منشوراتي', icon: User },
-          { id: 'saved', label: lang === 'en' ? 'Bookmarks' : 'المنشورات المحفوظة', icon: Bookmark },
-          { id: 'reposts', label: lang === 'en' ? 'My Reposts' : 'إعادات النشر الخاصة بي', icon: Repeat },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeFeedTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveFeedTab(tab.id as any);
-                setActiveMenuPostId(null);
-              }}
-              className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-xs font-bold transition-all outline-none ${
-                isActive
-                  ? 'border-b-mint-500 text-mint-500'
-                  : 'border-b-transparent text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+
 
       {/* 2. Loading State */}
       {isLoading ? (
@@ -1159,3 +1183,203 @@ export default function ActivityFeed() {
     </div>
   );
 }
+
+const SEED_POSTS_TRANSLATIONS: { [englishText: string]: string } = {
+  [`🚀 The Power of Consistency
+
+Success isn’t about making one huge effort—it’s about showing up every single day. Whether you’re learning a new programming language, preparing for an exam, or building your first project, consistency beats intensity. Spending just one focused hour every day can be far more effective than studying for ten hours the night before a deadline.
+
+💬 Question: What’s one small habit that has helped you stay productive?`]: `🚀 قوة الاستمرارية
+
+النجاح لا يعتمد على القيام بمجهود ضخم مرة واحدة، بل على الالتزام والاستمرار كل يوم. سواء كنت تتعلم لغة برمجة جديدة، أو تستعد لامتحان، أو تبني أول مشروع لك، فإن الاستمرارية تتفوق دائمًا على العمل المكثف في وقت قصير. فالدراسة لمدة ساعة واحدة بتركيز كل يوم أكثر فاعلية من الدراسة لعشر ساعات متواصلة قبل موعد التسليم.
+
+💬 سؤال للنقاش: ما هي العادة اليومية التي ساعدتك على أن تكون أكثر إنتاجية؟`,
+
+  [`🤖 Artificial Intelligence is Changing Everything
+
+Artificial Intelligence is no longer a technology of the future—it’s already part of our daily lives. From personalized recommendations on streaming platforms to medical diagnosis and self-driving vehicles, AI is transforming the way we work and solve problems.
+
+💬 Question: If you could build one AI application to improve people’s lives, what would it be?`]: `🤖 الذكاء الاصطناعي يغيّر كل شيء
+
+لم يعد الذكاء الاصطناعي تقنية تخص المستقبل فقط، بل أصبح جزءًا من حياتنا اليومية. فمن أنظمة التوصية في منصات البث، إلى التشخيص الطبي، والسيارات ذاتية القيادة، يساهم الذكاء الاصطناعي في تغيير طريقة عملنا وحلنا للمشكلات.
+
+💬 سؤال للنقاش: إذا أتيحت لك الفرصة لتطوير تطبيق يعتمد على الذكاء الاصطناعي لتحسين حياة الناس، فما الفكرة التي ستختارها؟`,
+
+  [`📚 Learning Never Stops
+
+Graduation isn’t the finish line—it’s only the beginning. The most successful professionals are lifelong learners. Whether it’s reading books, taking online courses, earning certifications, or building personal projects, continuous learning keeps you ahead in an ever-changing world.
+
+💬 Question: What’s the latest skill you’ve learned?`]: `📚 التعلم لا يتوقف أبدًا
+
+التخرج ليس نهاية رحلة التعلم، بل بدايتها. فأنجح الأشخاص هم من يواصلون التعلم باستمرار من خلال قراءة الكتب، والالتحاق بالدورات التدريبية، والحصول على الشهادات، وتنفيذ المشاريع العملية. التعلم المستمر هو مفتاح النجاح في عالم سريع التغير.
+
+💬 سؤال للنقاش: ما آخر مهارة تعلمتها وأحدثت فرقًا في حياتك؟`,
+
+  [`💻 Coding is More Than Writing Code
+
+Programming isn’t just about writing lines of code. It’s about solving real-world problems, thinking logically, and building products that improve people’s lives. Every bug teaches you something new, and every project strengthens your skills.
+
+💬 Question: Which programming language would you recommend to beginners?`]: `💻 البرمجة أكثر من مجرد كتابة أكواد
+
+البرمجة ليست مجرد كتابة تعليمات برمجية، بل هي القدرة على حل المشكلات والتفكير المنطقي وبناء حلول تساعد الآخرين. كل خطأ برمجي تتعلم منه، وكل مشروع تنجزه يجعلك مطورًا أفضل.
+
+💬 سؤال للنقاش: ما أول لغة برمجة تعلمتها؟ وهل تنصح بها للمبتدئين؟`,
+
+  [`🌍 Technology Connects the World
+
+Technology has made global collaboration easier than ever. Students, developers, designers, and researchers can now work together from different countries on the same project. Innovation grows when ideas are shared.
+
+💬 Question: Have you ever worked with someone from another country?`]: `🌍 التكنولوجيا تربط العالم
+
+جعلت التكنولوجيا التعاون بين الأشخاص من مختلف دول العالم أسهل من أي وقت مضى. يستطيع الطلاب والمطورون والمصممون والباحثون العمل معًا على نفس المشروع مهما كانت المسافات بينهم، فالإبداع ينمو عندما تتشارك الأفكار.
+
+💬 سؤال للنقاش: هل سبق لك أن عملت مع شخص من دولة أخرى؟`,
+
+  [`🎯 Small Progress is Still Progress
+
+Don’t underestimate the value of small daily improvements. Progress doesn’t have to be dramatic to be meaningful. Keep learning, stay patient, and remember that every expert started as a beginner.
+
+💬 Question: What’s one achievement you’re proud of this month?`]: `🎯 التقدم البسيط يظل تقدمًا
+
+لا تقلل أبدًا من قيمة التحسن اليومي، حتى وإن كان بسيطًا. ليس من الضروري أن يكون تقدمك كبيرًا حتى يكون مهمًا. استمر في التعلم وتحلَّ بالصبر، وتذكر أن كل خبير كان يومًا ما مبتدئًا.
+
+💬 سؤال للنقاش: ما الإنجاز الذي تفخر بتحقيقه هذا الشهر؟`,
+
+  [`📖 Your Favorite Learning Resource
+
+Everyone has that one resource that completely changed how they learn—whether it’s a book, a YouTube channel, a website, or an online course. Sharing great resources helps everyone grow together.
+
+💬 Question: What’s your favorite learning resource?`]: `📖 شاركنا أفضل مصادر التعلم لديك
+
+لكل شخص مصدر تعلم مفضل غيّر طريقته في اكتساب المعرفة، سواء كان كتابًا، أو قناة على يوتيوب، أو موقعًا إلكترونيًا، أو دورة تدريبية عبر الإنترنت. مشاركة هذه المصادر تساعد الجميع على التطور.
+
+💬 سؤال للنقاش: ما هو مصدر التعلم الذي تنصح به الجميع؟`,
+
+  [`☕ Take a Break—Your Brain Will Thank You
+
+Working without breaks can reduce your focus and creativity. A short walk, stretching, or simply stepping away from your screen for a few minutes can make a huge difference in your productivity.
+
+💬 Question: What’s your favorite way to recharge during study sessions?`]: `☕ خذ استراحة… سيشكرك عقلك على ذلك
+
+العمل المتواصل دون فترات راحة قد يقلل من التركيز والإبداع. لذلك، فإن المشي لبضع دقائق، أو ممارسة بعض التمارين الخفيفة، أو الابتعاد قليلًا عن الشاشة قد يساعدك على العودة بطاقة وتركيز أكبر.
+
+💬 سؤال للنقاش: ما هي طريقتك المفضلة لاستعادة نشاطك أثناء الدراسة أو العمل؟`,
+
+  [`🚀 Build Projects, Not Just Certificates
+
+Certificates are valuable, but projects show what you can actually do. Building applications, websites, robots, or research projects demonstrates your creativity and practical skills far better than a certificate alone.
+
+💬 Question: What project are you currently working on?`]: `🚀 ابنِ مشاريع، وليس شهادات فقط
+
+الشهادات مهمة، لكنها لا تُظهر دائمًا ما تستطيع إنجازه عمليًا. أما المشاريع فهي دليل حقيقي على مهاراتك وقدرتك على الابتكار وحل المشكلات، سواء كانت تطبيقًا، أو موقعًا إلكترونيًا، أو روبوتًا، أو مشروعًا بحثيًا.
+
+💬 سؤال للنقاش: ما المشروع الذي تعمل عليه حاليًا؟`,
+
+  [`💡 Question of the Week
+
+Imagine you could instantly master one skill today. Would you choose programming, public speaking, graphic design, cybersecurity, artificial intelligence, or something completely different?
+
+Tell us why!`]: `💡 سؤال الأسبوع
+
+تخيل أنك تستطيع إتقان مهارة واحدة فورًا. هل ستختار البرمجة، أم التصميم الجرافيكي، أم الأمن السيبراني، أم الذكاء الاصطناعي، أم التحدث أمام الجمهور، أم مجالًا آخر؟
+
+شاركنا اختيارك وسبب اختيارك له.`,
+
+  [`⚡ Powering the Future
+
+Energy Resources Engineering focuses on developing efficient and sustainable ways to generate, store, and manage energy. From renewable energy systems like solar and wind to traditional power plants, engineers in this field help shape a cleaner and more reliable future.
+
+💬 Discussion: Which renewable energy source do you believe has the greatest potential over the next decade?`]: `⚡ نحو مستقبل أكثر استدامة
+
+يركز تخصص هندسة موارد الطاقة على تطوير طرق فعالة ومستدامة لإنتاج الطاقة وتخزينها وإدارتها. فمن الطاقة الشمسية وطاقة الرياح إلى محطات الطاقة التقليدية، يساهم مهندسو الطاقة في بناء مستقبل أكثر نظافة واعتمادية.
+
+💬 سؤال للنقاش: في رأيك، أي مصدر للطاقة المتجددة يمتلك أكبر فرصة للانتشار خلال السنوات القادمة؟`,
+
+  [`⚙️ Engineering in Motion
+
+Mechanical Power Engineering combines mechanics, thermodynamics, fluid dynamics, and machine design to create systems that power industries and everyday life. From manufacturing plants to aircraft engines, mechanical engineers are behind countless innovations.
+
+💬 Discussion: If you could design any machine, what would it be?`]: `⚙️ الهندسة التي تحرك العالم
+
+يجمع تخصص هندسة القوى الميكانيكية بين الميكانيكا، والديناميكا الحرارية، وميكانيكا الموائع، وتصميم الآلات لإنشاء الأنظمة التي تشغل المصانع ووسائل النقل والعديد من الصناعات الحديثة.
+
+💬 سؤال للنقاش: إذا أتيحت لك الفرصة لتصميم آلة جديدة، فما الذي ستقوم بتصميمه؟`,
+
+  [`🏭 Making Systems Smarter
+
+Industrial Engineering is all about improving efficiency. Engineers in this field optimize production lines, reduce waste, improve quality, and make organizations work more effectively through data-driven decisions.
+
+💬 Discussion: Which is more important: speed or quality?`]: `🏭 أنظمة أكثر كفاءة
+
+تركز الهندسة الصناعية على تحسين كفاءة العمليات داخل المؤسسات والمصانع من خلال تقليل الهدر، وتحسين الجودة، وزيادة الإنتاجية، واتخاذ القرارات اعتمادًا على البيانات.
+
+💬 سؤال للنقاش: أيهما أهم في رأيك: السرعة أم الجودة؟`,
+
+  [`🤖 Where Mechanics Meets Intelligence
+
+Mechatronics combines mechanical engineering, electronics, computer science, and control systems to create smart machines and robots. It’s one of the fastest-growing engineering disciplines today.
+
+💬 Discussion: What real-world problem would you solve using robotics?`]: `🤖 عندما تلتقي الميكانيكا بالذكاء
+
+يجمع تخصص الميكاترونكس بين الهندسة الميكانيكية والإلكترونيات وعلوم الحاسب وأنظمة التحكم لتصميم الروبوتات والأنظمة الذكية، ويعد من أكثر التخصصات نموًا في الوقت الحالي.
+
+💬 سؤال للنقاش: ما المشكلة التي تتمنى أن يتم حلها باستخدام الروبوتات؟`,
+
+  [`💻 Building the Digital World
+
+Computer Engineers design the hardware and software systems that power modern technology. Whether developing embedded systems, processors, AI applications, or cloud platforms, they play a key role in digital transformation.
+
+💬 Discussion: Which emerging technology excites you the most?`]: `💻 بناء العالم الرقمي
+
+يقوم مهندسو الحاسبات بتصميم وتطوير الأنظمة البرمجية والمكونات الإلكترونية التي تعتمد عليها التكنولوجيا الحديثة، بدايةً من الأنظمة المدمجة وحتى تطبيقات الذكاء الاصطناعي والحوسبة السحابية.
+
+💬 سؤال للنقاش: ما أكثر تقنية حديثة تثير اهتمامك؟`,
+
+  [`🔌 Innovation Through Electronics
+
+Electronics Engineers design and develop circuits, communication systems, sensors, and embedded devices that make modern technology possible. Smartphones, satellites, and medical equipment all rely on electronics engineering.
+
+💬 Discussion: Which electronic device has had the biggest impact on society?`]: `🔌 الابتكار يبدأ من الدوائر الإلكترونية
+
+يقوم مهندسو الإلكترونيات بتطوير الدوائر الإلكترونية، وأنظمة الاتصالات، والمستشعرات، والأجهزة الذكية التي نعتمد عليها في حياتنا اليومية، مثل الهواتف الذكية والأقمار الصناعية والأجهزة الطبية.
+
+💬 سؤال للنقاش: ما الجهاز الإلكتروني الذي تعتقد أنه غيّر حياة البشر أكثر من غيره؟`,
+
+  [`🏗️ Designing the Cities of Tomorrow
+
+Civil & Architectural Engineering work together to create buildings, bridges, highways, and sustainable urban spaces. Their work combines structural safety, functionality, and aesthetic design to improve how people live.
+
+💬 Discussion: What’s your favorite modern building or architectural landmark?`]: `🏗️ تصميم مدن المستقبل
+
+يعمل المهندسون المدنيون والمعماريون معًا لإنشاء المباني، والجسور، والطرق، والمدن المستدامة، مع تحقيق التوازن بين الأمان، والوظيفة، والجمال في التصميم.
+
+💬 سؤال للنقاش: ما المبنى أو المعلم المعماري الذي يعجبك أكثر؟ ولماذا؟`,
+
+  [`🩺 Engineering That Saves Lives
+
+Biomedical Engineering combines medicine with engineering to develop technologies such as prosthetic limbs, medical imaging devices, wearable health monitors, and advanced diagnostic tools.
+
+💬 Discussion: Which medical innovation has impressed you the most?`]: `🩺 الهندسة التي تنقذ الأرواح
+
+يجمع تخصص الهندسة الطبية الحيوية بين الطب والهندسة لتطوير الأطراف الصناعية، وأجهزة التصوير الطبي، والأجهزة القابلة للارتداء، وتقنيات التشخيص والعلاج الحديثة.
+
+💬 سؤال للنقاش: ما أكثر ابتكار طبي أثار إعجابك؟`,
+
+  [`🎨 Design is Communication
+
+Graphic Design is more than creating beautiful visuals—it’s about communicating ideas effectively. Every color, font, and layout influences how people perceive information and brands.
+
+💬 Discussion: Which brand do you think has the best visual identity?`]: `🎨 التصميم هو لغة التواصل
+
+التصميم الجرافيكي لا يقتصر على إنتاج أعمال جميلة بصريًا، بل يهدف إلى توصيل الأفكار والرسائل بطريقة واضحة ومؤثرة. فكل لون وخط وتنسيق يلعب دورًا في تشكيل تجربة المتلقي.
+
+💬 سؤال للنقاش: ما العلامة التجارية التي تعتقد أنها تمتلك أفضل هوية بصرية؟`,
+
+  [`✨ Creating Better Experiences
+
+UI/UX Designers focus on making digital products intuitive, accessible, and enjoyable. Great design isn’t just about appearance—it’s about understanding users and solving their problems through thoughtful experiences.
+
+💬 Discussion: Which app do you think has the best user experience, and why?`]: `✨ تصميم يصنع تجربة أفضل
+
+يركز مصممو واجهات وتجربة المستخدم على إنشاء منتجات رقمية سهلة الاستخدام، وعملية، وممتعة للمستخدم. فالتصميم الجيد لا يتعلق بالشكل فقط، بل بفهم احتياجات المستخدم وتقديم أفضل تجربة ممكنة.`
+};
