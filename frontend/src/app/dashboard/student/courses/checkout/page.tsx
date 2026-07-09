@@ -195,7 +195,9 @@ export default function CourseCheckoutPage() {
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-text-secondary uppercase">CVV (3 Digits)</label>
                 <input
-                  type="password"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="new-password"
                   value={cvv}
                   onChange={handleCvvChange}
                   placeholder="***"
