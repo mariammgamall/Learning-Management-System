@@ -139,16 +139,12 @@ export default function DashboardLayout({
         return [
           { label: t('doctor_courses'), href: '/dashboard/doctor', icon: BookOpen },
           { label: t('doctor_lectures'), href: '/dashboard/doctor/lectures', icon: Video },
-          { label: t('doctor_assignments'), href: '/dashboard/doctor/assignments', icon: FileText },
-          { label: t('doctor_quizzes'), href: '/dashboard/doctor/quizzes', icon: HelpCircle },
           ...commonLinks,
         ];
       case 'TA':
         return [
           { label: t('dashboard'), href: '/dashboard/ta', icon: LayoutDashboard },
           { label: t('courses'), href: '/dashboard/ta/courses', icon: BookOpen },
-          { label: t('ta_lectures'), href: '/dashboard/ta/lectures', icon: Video },
-          { label: t('ta_quizzes'), href: '/dashboard/ta/quizzes', icon: HelpCircle },
           ...commonLinks,
         ];
       case 'STUDENT':
