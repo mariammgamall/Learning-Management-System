@@ -39,11 +39,12 @@ export default function MailboxPage() {
     ? 'support'
     : 'inbox';
 
-  const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'support'>(defaultTab as any);
+  const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'support' | 'tickets'>(defaultTab as any);
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Compose email state
+  const [replyMessage, setReplyMessage] = useState('');
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [receiverId, setReceiverId] = useState('');
   const [subject, setSubject] = useState('');
@@ -63,10 +64,43 @@ export default function MailboxPage() {
   const { data: emails = [], isLoading: isLoadingEmails } = useQuery({
     queryKey: ['emails', activeTab],
     queryFn: async () => {
+      if (activeTab === 'tickets') {
+        const response = await api.get('/support/tickets/my');
+        return response.data.map((t: any) => ({
+          ...t,
+          sender: { name: t.assignedTo?.name || 'Help Centre Support', email: 'support@lms.com' },
+          receiver: { name: user?.name, email: user?.email },
+          isRead: true,
+        }));
+      }
       const response = await api.get(`/emails?type=${activeTab}`);
       return response.data;
     },
     enabled: !!user,
+  });
+
+  // Fetch detailed ticket conversations (if viewing a ticket)
+  const isSelectedTicket = selectedEmail && !!selectedEmail.ticketNumber;
+  const { data: ticketDetails = null, isLoading: isLoadingTicketDetails } = useQuery({
+    queryKey: ['mailbox-ticket-details', selectedEmail?.id],
+    queryFn: async () => {
+      const response = await api.get(`/support/tickets/${selectedEmail.id}`);
+      return response.data;
+    },
+    enabled: isSelectedTicket,
+  });
+
+  const sendTicketReplyMutation = useMutation({
+    mutationFn: async ({ ticketId, msgText }: { ticketId: string; msgText: string }) => {
+      await api.post(`/support/tickets/${ticketId}/messages`, { message: msgText });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mailbox-ticket-details', selectedEmail?.id] });
+      addToast(lang === 'en' ? 'Reply sent successfully!' : 'تم إرسال الرد بنجاح!', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to send reply', 'error');
+    },
   });
 
   // Fetch contact list
@@ -226,6 +260,21 @@ export default function MailboxPage() {
           {lang === 'en' ? 'Sent' : 'المرسل'}
         </button>
 
+        <button
+          onClick={() => {
+            setActiveTab('tickets');
+            setSelectedEmail(null);
+          }}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'tickets'
+              ? 'bg-mint-500 text-white shadow-soft'
+              : 'text-text-secondary hover:bg-beige-100 dark:hover:bg-neutral-850'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          {lang === 'en' ? 'My Support Tickets' : 'تذاكر الدعم الخاصة بي'}
+        </button>
+
         {(user?.role === 'SUPPORT' || user?.role === 'ADMIN') && (
           <button
             onClick={() => {
@@ -364,64 +413,136 @@ export default function MailboxPage() {
                 </button>
               </div>
 
-              {/* Sender Details */}
-              <div className="flex items-center gap-3">
-                {selectedEmail.sender?.profilePhoto ? (
-                  <img
-                    src={selectedEmail.sender.profilePhoto}
-                    alt={selectedEmail.sender.name}
-                    className="w-10 h-10 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-beige-200 dark:bg-neutral-800 text-text-secondary dark:text-neutral-300 flex items-center justify-center font-bold text-sm rounded-xl">
-                    {selectedEmail.sender?.name?.charAt(0) || '?'}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
-                    <span className="text-xs font-black text-text-primary dark:text-neutral-100">
-                      {selectedEmail.sender?.name}
-                    </span>
-                    <span className="text-[9px] font-semibold text-text-secondary flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {new Date(selectedEmail.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-text-secondary/70 truncate block">
-                    {lang === 'en' ? 'From:' : 'من:'} {selectedEmail.sender?.email} | {lang === 'en' ? 'To:' : 'إلى:'} {selectedEmail.receiver?.name}
-                  </span>
-                </div>
-              </div>
-
-              {/* Message Content Body */}
-              <div className="flex-1 text-xs text-text-primary dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 p-6 rounded-2xl font-semibold leading-relaxed whitespace-pre-wrap overflow-y-auto max-h-[300px]">
-                {selectedEmail.message}
-              </div>
-
-              {/* Attachment Download Container */}
-              {selectedEmail.attachment && (
-                <div className="p-4 bg-beige-50 dark:bg-neutral-850 rounded-2xl border border-beige-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Paperclip className="w-4 h-4 text-mint-500 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-text-secondary block">
-                        {lang === 'en' ? 'Attachment File:' : 'الملف المرفق:'}
+              {isSelectedTicket ? (
+                <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+                  <div className="p-4 bg-beige-50 dark:bg-neutral-850 rounded-2xl border border-beige-200 dark:border-neutral-800 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-mint-500">{ticketDetails?.ticketNumber}</span>
+                      <span className="px-2 py-0.5 bg-mint-50 text-mint-600 dark:bg-mint-950/20 dark:text-mint-400 text-[8px] font-black uppercase rounded">
+                        Status: {ticketDetails?.status}
                       </span>
-                      <span className="text-[11px] font-black text-text-primary dark:text-neutral-200 truncate block">
-                        {selectedEmail.attachment.split('/').pop() || 'screenshot.jpg'}
+                    </div>
+                    <p className="text-xs font-semibold text-text-primary dark:text-neutral-200 leading-relaxed bg-white dark:bg-neutral-900 p-3 rounded-xl border border-beige-100 dark:border-neutral-800">
+                      {ticketDetails?.description}
+                    </p>
+                  </div>
+
+                  {/* Message History Chat */}
+                  <div className="flex-1 space-y-3 overflow-y-auto max-h-[300px] pr-1">
+                    {ticketDetails?.messages?.map((msg: any) => {
+                      const isSelf = msg.senderId === user?.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex flex-col max-w-[85%] ${isSelf ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                        >
+                          <span className="text-[7.5px] font-bold text-text-secondary mb-0.5">
+                            {msg.sender?.name} {msg.sender?.role === 'SUPPORT' ? '(Support Agent)' : ''}
+                          </span>
+                          <div className={`p-2.5 rounded-xl text-xs font-semibold leading-relaxed ${
+                            isSelf
+                              ? 'bg-mint-500 text-white'
+                              : 'bg-beige-100 dark:bg-neutral-805 text-text-primary dark:text-neutral-200'
+                          }`}>
+                            {msg.message}
+                          </div>
+                          <span className="text-[6.5px] text-text-secondary/70 mt-0.5">
+                            {new Date(msg.createdAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Send reply form */}
+                  {ticketDetails?.status !== 'Closed' && ticketDetails?.status !== 'Resolved' && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!replyMessage.trim()) return;
+                        sendTicketReplyMutation.mutate({ ticketId: ticketDetails.id, msgText: replyMessage });
+                        setReplyMessage('');
+                      }}
+                      className="flex gap-2 border-t border-beige-100 dark:border-neutral-850 pt-3"
+                    >
+                      <input
+                        type="text"
+                        placeholder={lang === 'en' ? 'Type response to support agent...' : 'اكتب ردك لوكيل الدعم الفني...'}
+                        value={replyMessage}
+                        onChange={(e) => setReplyMessage(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs font-semibold border border-beige-200 dark:border-neutral-700 dark:bg-neutral-900 rounded-lg outline-none bg-white dark:text-neutral-200"
+                      />
+                      <button
+                        type="submit"
+                        className="p-2 bg-mint-500 hover:bg-mint-400 text-white rounded-lg flex items-center justify-center flex-shrink-0"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Sender Details */}
+                  <div className="flex items-center gap-3">
+                    {selectedEmail.sender?.profilePhoto ? (
+                      <img
+                        src={selectedEmail.sender.profilePhoto}
+                        alt={selectedEmail.sender.name}
+                        className="w-10 h-10 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-beige-200 dark:bg-neutral-800 text-text-secondary dark:text-neutral-300 flex items-center justify-center font-bold text-sm rounded-xl">
+                        {selectedEmail.sender?.name?.charAt(0) || '?'}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
+                        <span className="text-xs font-black text-text-primary dark:text-neutral-100">
+                          {selectedEmail.sender?.name}
+                        </span>
+                        <span className="text-[9px] font-semibold text-text-secondary flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {new Date(selectedEmail.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-text-secondary/70 truncate block">
+                        {lang === 'en' ? 'From:' : 'من:'} {selectedEmail.sender?.email} | {lang === 'en' ? 'To:' : 'إلى:'} {selectedEmail.receiver?.name}
                       </span>
                     </div>
                   </div>
-                  <a
-                    href={selectedEmail.attachment}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl shadow-soft flex items-center justify-center"
-                    title="Download attachment"
-                  >
-                    <Download className="w-4 h-4" />
-                  </a>
-                </div>
+
+                  {/* Message Content Body */}
+                  <div className="flex-1 text-xs text-text-primary dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 p-6 rounded-2xl font-semibold leading-relaxed whitespace-pre-wrap overflow-y-auto max-h-[300px]">
+                    {selectedEmail.message}
+                  </div>
+
+                  {/* Attachment Download Container */}
+                  {selectedEmail.attachment && (
+                    <div className="p-4 bg-beige-50 dark:bg-neutral-850 rounded-2xl border border-beige-200 dark:border-neutral-800 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Paperclip className="w-4 h-4 text-mint-500 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold text-text-secondary block">
+                            {lang === 'en' ? 'Attachment File:' : 'الملف المرفق:'}
+                          </span>
+                          <span className="text-[11px] font-black text-text-primary dark:text-neutral-200 truncate block">
+                            {selectedEmail.attachment.split('/').pop() || 'screenshot.jpg'}
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href={selectedEmail.attachment}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-mint-500 hover:bg-mint-400 text-white rounded-xl shadow-soft flex items-center justify-center"
+                        title="Download attachment"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (

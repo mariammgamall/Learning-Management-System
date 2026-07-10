@@ -30,6 +30,7 @@ import {
   User,
   Compass,
   Mail,
+  Briefcase,
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -168,6 +169,7 @@ export default function DashboardLayout({
       { label: lang === 'en' ? 'Mailbox' : 'صندوق البريد', href: '/dashboard/mailbox', icon: Mail },
       { label: t('meetings'), href: '/dashboard/meetings', icon: Video },
       { label: t('profile'), href: '/dashboard/profile', icon: User },
+      { label: lang === 'en' ? 'About LMS' : 'عن النظام', href: '/dashboard/about', icon: GraduationCap },
     ];
 
     switch (role) {
@@ -193,14 +195,19 @@ export default function DashboardLayout({
       case 'STUDENT':
         return [
           { label: t('dashboard'), href: '/dashboard/student', icon: LayoutDashboard },
+          { label: lang === 'en' ? 'My Workspace' : 'مساحة العمل الخاصة بي', href: '/dashboard/student/workspace', icon: Briefcase },
           { label: t('catalog'), href: '/dashboard/student/catalog', icon: BookOpen },
           { label: t('courses'), href: '/dashboard/student/courses', icon: Award },
           ...commonLinks,
         ];
       case 'SUPPORT':
         return [
-          { label: lang === 'en' ? 'Support Desk' : 'مكتب الدعم الفني', href: '/dashboard/mailbox?view=support', icon: LayoutDashboard },
-          ...commonLinks,
+          { label: lang === 'en' ? 'Support Dashboard' : 'لوحة تحكم الدعم', href: '/dashboard/support', icon: LayoutDashboard },
+          { label: lang === 'en' ? 'Tickets Manager' : 'إدارة التذاكر', href: '/dashboard/support/tickets', icon: FileText },
+          { label: lang === 'en' ? 'Knowledge Base' : 'قاعدة المعرفة', href: '/dashboard/support/kb', icon: BookOpen },
+          { label: lang === 'en' ? 'Student Lookup' : 'البحث عن الطلاب', href: '/dashboard/support/students', icon: Users },
+          { label: lang === 'en' ? 'Reports & Analytics' : 'التقارير والتحليلات', href: '/dashboard/support/reports', icon: Award },
+          { label: lang === 'en' ? 'Profile Settings' : 'إعدادات الحساب', href: '/dashboard/support/settings', icon: User },
         ];
       default:
         return [];

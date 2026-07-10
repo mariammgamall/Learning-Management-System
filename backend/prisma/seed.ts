@@ -49,7 +49,15 @@ async function main() {
   await prisma.enrollment.deleteMany();
   await prisma.courseTA.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.email.deleteMany(); // Added to clean email table too!
+  await prisma.email.deleteMany();
+  await prisma.internshipApplication.deleteMany();
+  await prisma.internship.deleteMany();
+  await prisma.workspaceProject.deleteMany();
+  await prisma.teamMember.deleteMany();
+  await prisma.workspaceTeam.deleteMany();
+  await prisma.kBArticle.deleteMany();
+  await prisma.ticketMessage.deleteMany();
+  await prisma.supportTicket.deleteMany();
 
   // Declare variables to store Course 4 lecture references for watched mapping
   let lecture4_1: any;
@@ -595,12 +603,285 @@ async function main() {
     }
   });
 
-  await prisma.watchedLecture.create({
-    data: {
-      studentId: mariamGamal.id,
-      lectureId: lecture4_2.id,
+  // ========================================================
+  // Support, Knowledge Base, Workspace & Internships Seed
+  // ========================================================
+  console.log('Seeding workspace, internships, KB articles, and support tickets...');
+  
+  // Support agents references
+  const supportAgent = await prisma.user.findFirst({ where: { email: 'support@lms.com' } });
+  const studentMariam = await prisma.user.findFirst({ where: { email: 'mariamgamal@lms.com' } });
+  const studentShehab = await prisma.user.findFirst({ where: { email: 'shehabebied@lms.com' } });
+  const studentTaline = await prisma.user.findFirst({ where: { email: 'talineyoussef@lms.com' } });
+
+  if (studentMariam && studentShehab && studentTaline && supportAgent) {
+    // 1. Seed Support Tickets
+    const ticket1 = await prisma.supportTicket.create({
+      data: {
+        ticketNumber: 'LMS-1024',
+        studentId: studentMariam.id,
+        subject: 'Cannot access quizzes builder',
+        description: 'I tried to open the quizzes builder in my course page, but it gives me an authorization error screen.',
+        category: 'Quizzes',
+        priority: 'High',
+        status: 'Open',
+        assignedToId: supportAgent.id,
+      },
+    });
+
+    await prisma.ticketMessage.createMany({
+      data: [
+        {
+          ticketId: ticket1.id,
+          senderId: studentMariam.id,
+          message: 'I tried to open the quizzes builder in my course page, but it gives me an authorization error screen.',
+          isInternal: false,
+        },
+        {
+          ticketId: ticket1.id,
+          senderId: supportAgent.id,
+          message: 'Hello Mariam, are you trying to access this as a Student or TA? Students do not have permission to build quizzes.',
+          isInternal: false,
+        },
+        {
+          ticketId: ticket1.id,
+          senderId: studentMariam.id,
+          message: 'I am enrolled as a Student, but I saw it in the portal controls. Ah, thank you for clarifying!',
+          isInternal: false,
+        },
+      ],
+    });
+
+    const ticket2 = await prisma.supportTicket.create({
+      data: {
+        ticketNumber: 'LMS-1025',
+        studentId: studentShehab.id,
+        subject: 'Video player buffering issues',
+        description: 'Lecture 3 video is taking ages to buffer. Other lectures are running fine.',
+        category: 'Technical Issues',
+        priority: 'Medium',
+        status: 'In Progress',
+        assignedToId: supportAgent.id,
+      },
+    });
+
+    await prisma.ticketMessage.createMany({
+      data: [
+        {
+          ticketId: ticket2.id,
+          senderId: studentShehab.id,
+          message: 'Lecture 3 video is taking ages to buffer. Other lectures are running fine.',
+          isInternal: false,
+        },
+        {
+          ticketId: ticket2.id,
+          senderId: supportAgent.id,
+          message: 'Checking video source metadata logs...',
+          isInternal: true,
+        },
+        {
+          ticketId: ticket2.id,
+          senderId: supportAgent.id,
+          message: 'Hi Shehab, we have re-encoded the video in multiple resolutions. Please try checking now at 480p and let us know.',
+          isInternal: false,
+        },
+      ],
+    });
+
+    const ticket3 = await prisma.supportTicket.create({
+      data: {
+        ticketNumber: 'LMS-1026',
+        studentId: studentTaline.id,
+        subject: 'How to download academic certificate',
+        description: 'I scored a total score of 85% in Advanced Robotics, but cannot see any certificate button.',
+        category: 'Certificates',
+        priority: 'Low',
+        status: 'Resolved',
+        assignedToId: supportAgent.id,
+      },
+    });
+
+    await prisma.ticketMessage.createMany({
+      data: [
+        {
+          ticketId: ticket3.id,
+          senderId: studentTaline.id,
+          message: 'I scored a total score of 85% in Advanced Robotics, but cannot see any certificate button.',
+          isInternal: false,
+        },
+        {
+          ticketId: ticket3.id,
+          senderId: supportAgent.id,
+          message: 'Hi Taline, the certificate button is available on the course home banner once final grades are locked. I have manually unlocked your certificate generation, please check now!',
+          isInternal: false,
+        },
+      ],
+    });
+
+    // 1.5 Seed Standard user-to-user emails
+    const doctorAhmed = await prisma.user.findFirst({ where: { email: 'ahmedhagag@lms.com' } });
+    const taYoussef = await prisma.user.findFirst({ where: { email: 'youssefmohamed@lms.com' } });
+
+    if (doctorAhmed && taYoussef) {
+      await prisma.email.createMany({
+        data: [
+          {
+            senderId: doctorAhmed.id,
+            receiverId: studentMariam.id,
+            subject: 'Feedback on project submission',
+            message: 'Hi Mariam, I reviewed your healthcare diagnostic system draft. Excellent progress, but please check the API response latency guidelines before tomorrow.',
+            isSupport: false,
+          },
+          {
+            senderId: studentShehab.id,
+            receiverId: taYoussef.id,
+            subject: 'Question about Assignment 2 deadline',
+            message: 'Hello Youssef, I have a conflict with the current database assignment deadline. Can I submit it one day late?',
+            isSupport: false,
+          },
+          {
+            senderId: taYoussef.id,
+            receiverId: studentShehab.id,
+            subject: 'Re: Question about Assignment 2 deadline',
+            message: 'Hi Shehab, yes, that is fine. I have recorded a 24-hour extension for your profile in the grade tracker.',
+            isSupport: false,
+          },
+        ],
+      });
     }
-  });
+
+    // 2. Seed KB Articles
+    await prisma.kBArticle.createMany({
+      data: [
+        {
+          title: 'How to Reset Your Account Password',
+          category: 'Login & Security',
+          description: 'Step-by-step instructions on updating or resetting password credentials.',
+          content: 'To reset your password:\n1. Click on the profile photo in the sidebar dashboard.\n2. Open Profile Settings.\n3. Locate the Change Password section, type in your old and new password, and click save.',
+        },
+        {
+          title: 'Understanding Certificate Requirements',
+          category: 'Certificates',
+          description: 'Criteria for certificate generation in courses.',
+          content: 'Certificates are issued automatically to students who successfully score more than 50% across assignments and quiz marks, and have at least 70% attendance recorded in the lecture logs.',
+        },
+        {
+          title: 'Cannot Submit Assignments on Time',
+          category: 'Assignments',
+          description: 'Policy and help for late course submissions.',
+          content: 'If the submit button is locked, the assignment deadline has passed. You should contact your course Doctor or Teaching Assistant to request a manual late extension window.',
+        },
+      ],
+    });
+
+    // 3. Seed Internships
+    const intern1 = await prisma.internship.create({
+      data: {
+        companyName: 'Google',
+        companyLogo: 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=100&auto=format&fit=crop',
+        companyDescription: 'Google is a global technology leader focusing on search, AI, cloud computing, and software platforms.',
+        industry: 'Technology',
+        website: 'https://google.com',
+        title: 'Software Engineering Internship',
+        category: 'Software Engineering',
+        duration: '3 Months',
+        mode: 'Remote',
+        skills: JSON.stringify(['React', 'Node.js', 'TypeScript', 'Data Structures']),
+        responsibilities: 'Build performant UI features, participate in architecture reviews, write scalable API services.',
+        requirements: 'Currently enrolled in Computer Science or related degree. Experience building modern web applications.',
+        benefits: 'Competitive stipend, mentorship from senior engineers, career networking events.',
+        deadline: new Date('2026-09-30T00:00:00Z'),
+      },
+    });
+
+    const intern2 = await prisma.internship.create({
+      data: {
+        companyName: 'Meta',
+        companyLogo: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&auto=format&fit=crop',
+        companyDescription: 'Meta builds technologies that help people connect, find communities, and grow businesses.',
+        industry: 'Social Media & Tech',
+        website: 'https://meta.com',
+        title: 'AI Research Assistant',
+        category: 'Artificial Intelligence',
+        duration: '6 Months',
+        mode: 'Hybrid',
+        skills: JSON.stringify(['Python', 'PyTorch', 'Computer Vision', 'Deep Learning']),
+        responsibilities: 'Train convolutional networks, run evaluation benchmarks on visual datasets, clean pipeline data.',
+        requirements: 'Prior experience coding in Python and training neural network models with PyTorch.',
+        benefits: 'High performance GPU workspace access, research paper co-authoring opportunities.',
+        deadline: new Date('2026-11-15T00:00:00Z'),
+      },
+    });
+
+    // Student Mariam applied to Google
+    await prisma.internshipApplication.create({
+      data: {
+        internshipId: intern1.id,
+        studentId: studentMariam.id,
+        status: 'Under Review',
+      },
+    });
+
+    // 4. Seed Workspace Teams and Projects
+    const team1 = await prisma.workspaceTeam.create({
+      data: {
+        name: 'AI Healthcare Research Team',
+        description: 'Collaborative academic cohort developing computer vision systems for automated cancer cell detection.',
+        status: 'Active',
+      },
+    });
+
+    // Team Members
+    await prisma.teamMember.createMany({
+      data: [
+        {
+          teamId: team1.id,
+          userId: studentMariam.id,
+          roleName: 'Team Lead',
+          status: 'Accepted',
+        },
+        {
+          teamId: team1.id,
+          userId: studentShehab.id,
+          roleName: 'AI Engineer',
+          status: 'Accepted',
+        },
+        {
+          teamId: team1.id,
+          userId: studentTaline.id,
+          roleName: 'Frontend Developer',
+          status: 'Pending',
+        },
+      ],
+    });
+
+    // Project linked to Team 1
+    await prisma.workspaceProject.create({
+      data: {
+        name: 'Automated Diagnostic Portal',
+        description: 'Web dashboard that visualizes neural network diagnostic classifications of MRI images for cancer screening.',
+        category: 'Full Stack Web & AI Application',
+        logoUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=100&auto=format&fit=crop',
+        technologies: JSON.stringify(['Next.js', 'TypeScript', 'FastAPI', 'PyTorch', 'Tailwind CSS']),
+        status: 'In Progress',
+        completionPercentage: 65,
+        keyFeatures: JSON.stringify([
+          'JWT Authentication with Role-Based Access Control',
+          'FastAPI microservice endpoints returning inference coordinates',
+          'Interactive React canvas rendering image overlays',
+          'Historical grading analytics logs'
+        ]),
+        gallery: JSON.stringify([
+          'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&auto=format&fit=crop',
+        ]),
+        liveDemoUrl: 'https://healthcare-ai.lms.com',
+        githubUrl: 'https://github.com/mariamgamal/healthcare-diagnostic-ai',
+        docsUrl: 'https://healthcare-ai.lms.com/docs',
+        teamId: team1.id,
+        ownerId: studentMariam.id,
+      },
+    });
+  }
 
   console.log('Database successfully seeded!');
 }

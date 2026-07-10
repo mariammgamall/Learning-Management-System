@@ -37,6 +37,12 @@ model User {
   savedPosts        Post[]           @relation("UserSavedPosts")
   sentEmails        Email[]          @relation("SentEmails")
   receivedEmails    Email[]          @relation("ReceivedEmails")
+  studentTickets    SupportTicket[]  @relation("StudentTickets")
+  assignedTickets   SupportTicket[]  @relation("AssignedTickets")
+  ticketMessages    TicketMessage[]
+  teamMemberships   TeamMember[]
+  ownedProjects     WorkspaceProject[]
+  internshipApps    InternshipApplication[]
 }
 
 model Course {
@@ -311,4 +317,121 @@ model Email {
   createdAt    DateTime @default(now())
   isRead       Boolean  @default(false)
   isSupport    Boolean  @default(false)
+}
+
+model SupportTicket {
+  id           String          @id @default(uuid())
+  ticketNumber String          @unique // e.g. LMS-2034
+  studentId    String
+  student      User            @relation("StudentTickets", fields: [studentId], references: [id], onDelete: Cascade)
+  subject      String
+  description  String
+  category     String          @default("Technical Issues")
+  priority     String          @default("Medium")
+  status       String          @default("Open")
+  attachment   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  assignedToId String?
+  assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages     TicketMessage[]
+}
+
+model TicketMessage {
+  id         String        @id @default(uuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  message    String
+  attachment String?
+  isInternal Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+}
+
+model KBArticle {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  description String
+  content     String
+  imageUrl    String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+model WorkspaceTeam {
+  id          String             @id @default(uuid())
+  name        String
+  description String
+  status      String             @default("Active")
+  createdAt   DateTime           @default(now())
+  members     TeamMember[]
+  projects    WorkspaceProject[]
+}
+
+model TeamMember {
+  id        String        @id @default(uuid())
+  teamId    String
+  team      WorkspaceTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleName  String        @default("Member")
+  status    String        @default("Accepted") // Pending, Accepted, Rejected
+  createdAt DateTime      @default(now())
+
+  @@unique([teamId, userId])
+}
+
+model WorkspaceProject {
+  id                   String         @id @default(uuid())
+  name                 String
+  description          String
+  logoUrl              String?
+  category             String
+  technologies         String
+  status               String         @default("Planning")
+  completionPercentage Int            @default(0)
+  keyFeatures          String
+  gallery              String?
+  liveDemoUrl          String?
+  githubUrl            String?
+  docsUrl              String?
+  teamId               String?
+  team                 WorkspaceTeam? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  ownerId              String
+  owner                User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt            DateTime       @default(now())
+}
+
+model Internship {
+  id                 String                  @id @default(uuid())
+  companyName        String
+  companyLogo        String?
+  companyDescription String
+  industry           String
+  website            String?
+  title              String
+  category           String
+  duration           String
+  mode               String                  @default("Remote")
+  skills             String
+  responsibilities   String
+  requirements       String
+  benefits           String?
+  deadline           DateTime
+  createdAt          DateTime                @default(now())
+  applications       InternshipApplication[]
+}
+
+model InternshipApplication {
+  id           String     @id @default(uuid())
+  internshipId String
+  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status       String     @default("Applied") // Applied, Under Review, Interview, Accepted, Rejected
+  appliedAt    DateTime   @default(now())
+
+  @@unique([internshipId, studentId])
 }
