@@ -98,64 +98,66 @@ export default function SupportSettingsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* Left Card: Account Settings */}
-        <div className="p-6 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-4">
+        <div className="p-6 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-4 flex flex-col">
           <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2 border-b border-beige-100 dark:border-neutral-850 pb-2">
             <User className="w-4 h-4 text-mint-500" />
             {lang === 'en' ? 'Agent Profile Info' : 'بيانات الوكيل'}
           </h3>
 
-          <form onSubmit={handleProfileSubmit} className="space-y-4 text-xs font-semibold">
-            {/* Name */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'Full Name *' : 'الاسم الكامل *'}
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
-              />
-            </div>
+          <form onSubmit={handleProfileSubmit} className="flex-1 flex flex-col justify-between space-y-4 text-xs font-semibold">
+            <div className="space-y-4">
+              {/* Name */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Full Name *' : 'الاسم الكامل *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
+                />
+              </div>
 
-            {/* Email */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'Email Address *' : 'البريد الإلكتروني *'}
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
-              />
-            </div>
+              {/* Email */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Email Address *' : 'البريد الإلكتروني *'}
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
+                />
+              </div>
 
-            {/* Profile Photo */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'Upload Avatar' : 'تغيير الصورة الشخصية'}
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    setProfilePhoto(e.target.files[0]);
-                  }
-                }}
-                className="w-full text-xs text-text-secondary cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200"
-              />
+              {/* Profile Photo */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Upload Avatar' : 'تغيير الصورة الشخصية'}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setProfilePhoto(e.target.files[0]);
+                    }
+                  }}
+                  className="w-full text-xs text-text-secondary cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200"
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isUpdatingProfile}
-              className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-2 transition-transform hover:scale-102"
+              className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-2 transition-transform hover:scale-102 mt-auto"
             >
               {isUpdatingProfile ? (
                 <>
@@ -170,59 +172,61 @@ export default function SupportSettingsPage() {
         </div>
 
         {/* Right Card: Security Settings */}
-        <div className="p-6 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-4">
+        <div className="p-6 bg-white dark:bg-neutral-900 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-4 flex flex-col">
           <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2 border-b border-beige-100 dark:border-neutral-850 pb-2">
             <Mail className="w-4 h-4 text-mint-500" />
             {lang === 'en' ? 'Update Credentials' : 'تحديث كلمة المرور'}
           </h3>
 
-          <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs font-semibold">
-            {/* Current Password */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'Current Password *' : 'كلمة المرور الحالية *'}
-              </label>
-              <input
-                type="password"
-                required
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
-              />
-            </div>
+          <form onSubmit={handlePasswordSubmit} className="flex-1 flex flex-col justify-between space-y-4 text-xs font-semibold">
+            <div className="space-y-4">
+              {/* Current Password */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Current Password *' : 'كلمة المرور الحالية *'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
+                />
+              </div>
 
-            {/* New Password */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'New Password *' : 'كلمة المرور الجديدة *'}
-              </label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
-              />
-            </div>
+              {/* New Password */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'New Password *' : 'كلمة المرور الجديدة *'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
+                />
+              </div>
 
-            {/* Confirm New Password */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
-                {lang === 'en' ? 'Confirm New Password *' : 'تأكيد كلمة المرور الجديدة *'}
-              </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
-              />
+              {/* Confirm New Password */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Confirm New Password *' : 'تأكيد كلمة المرور الجديدة *'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:text-neutral-200"
+                />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isUpdatingPassword}
-              className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-2 transition-transform hover:scale-102"
+              className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-2 transition-transform hover:scale-102 mt-auto"
             >
               {isUpdatingPassword ? (
                 <>

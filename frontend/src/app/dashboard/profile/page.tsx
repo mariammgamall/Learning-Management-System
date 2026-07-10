@@ -39,6 +39,11 @@ export default function ProfilePage() {
   const [interests, setInterests] = useState(user?.interests || '');
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   // 1. Fetch Academic Report (if student)
   const { data: reportData = [], isLoading: isReportLoading } = useQuery({
     queryKey: ['studentReport'],
@@ -227,6 +232,37 @@ export default function ProfilePage() {
     },
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      await api.put('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+    },
+    onSuccess: () => {
+      addToast(lang === 'en' ? 'Password changed successfully!' : 'تم تغيير كلمة المرور بنجاح!', 'success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.message || 'Failed to change password', 'error');
+    },
+  });
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      addToast(lang === 'en' ? 'Please fill all password fields' : 'يرجى ملء جميع حقول كلمة المرور', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      addToast(lang === 'en' ? 'New passwords do not match' : 'كلمات المرور الجديدة غير متطابقة', 'error');
+      return;
+    }
+    changePasswordMutation.mutate();
+  };
+
   if (!user) {
     return (
       <div className="flex justify-center py-10">
@@ -385,7 +421,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto animate-fade-in text-xs font-semibold">
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in text-xs font-semibold">
       {/* Header back link */}
       <div className="flex items-center gap-3">
         <Link
@@ -428,141 +464,198 @@ export default function ProfilePage() {
       )}
 
       {activeTab === 'info' && (
-        <div className="bg-white p-6 md:p-8 rounded-3xl border border-beige-200/80 shadow-premium space-y-8">
-        {/* Avatar Area */}
-        <div className="flex flex-col items-center sm:flex-row gap-6 pb-6 border-b border-beige-100">
-          <div className="relative group">
-            {user.profilePhoto ? (
-              <img
-                src={user.profilePhoto}
-                alt={user.name}
-                className="w-28 h-28 rounded-2xl object-cover border-2 border-mint-500 shadow-soft"
-              />
-            ) : (
-              <div className="w-28 h-28 rounded-2xl bg-mint-50 border border-mint-100 text-mint-500 font-extrabold text-3xl flex items-center justify-center shadow-soft">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch w-full max-w-4xl mx-auto">
+          {/* Left Card: Account details */}
+          <div className="bg-white dark:bg-neutral-900 p-6 md:p-8 rounded-3xl border border-beige-200/80 dark:border-neutral-850 shadow-premium flex flex-col space-y-6">
+            {/* Avatar Area */}
+            <div className="flex flex-col items-center sm:flex-row gap-6 pb-6 border-b border-beige-100">
+              <div className="relative group">
+                {user.profilePhoto ? (
+                  <img
+                    src={user.profilePhoto}
+                    alt={user.name}
+                    className="w-24 h-24 rounded-2xl object-cover border-2 border-mint-500 shadow-soft"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-2xl bg-mint-50 border border-mint-100 text-mint-500 font-extrabold text-2xl flex items-center justify-center shadow-soft">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
 
-            {/* Hover Actions overlay */}
-            <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              {user.profilePhoto && (
-                <button
-                  type="button"
-                  onClick={() => setIsLightboxOpen(true)}
-                  className="p-2 bg-white/20 text-white hover:bg-white/40 rounded-lg transition-colors"
-                  title={lang === 'en' ? 'View full photo' : 'عرض الصورة كاملة'}
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-              )}
-              <label
-                className="p-2 bg-white/20 text-white hover:bg-white/40 rounded-lg cursor-pointer transition-colors"
-                title={lang === 'en' ? 'Change photo' : 'تغيير الصورة'}
-              >
-                <Camera className="w-4 h-4" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                />
-              </label>
-              {user.profilePhoto && (
-                <button
-                  type="button"
-                  onClick={handleDeletePhoto}
-                  className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 rounded-lg transition-colors"
-                  title={lang === 'en' ? 'Delete photo' : 'حذف الصورة'}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
+                {/* Hover Actions overlay */}
+                <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  {user.profilePhoto && (
+                    <button
+                      type="button"
+                      onClick={() => setIsLightboxOpen(true)}
+                      className="p-2 bg-white/20 text-white hover:bg-white/40 rounded-lg transition-colors"
+                      title={lang === 'en' ? 'View full photo' : 'عرض الصورة كاملة'}
+                    >
+                      <Eye className="w-4 h-4 animate-flip-on-rtl" />
+                    </button>
+                  )}
+                  <label
+                    className="p-2 bg-white/20 text-white hover:bg-white/40 rounded-lg cursor-pointer transition-colors"
+                    title={lang === 'en' ? 'Change photo' : 'تغيير الصورة'}
+                  >
+                    <Camera className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {user.profilePhoto && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePhoto}
+                      className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 rounded-lg transition-colors"
+                      title={lang === 'en' ? 'Delete photo' : 'حذف الصورة'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-center sm:text-left space-y-1.5 flex-1">
+                <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100">{user.name}</h3>
+                <p className="text-[10px] text-text-secondary">{user.email}</p>
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
+                  <span className="px-2 py-0.5 bg-mint-50 border border-mint-100 text-mint-500 rounded-md text-[8px] font-bold uppercase tracking-wider">
+                    {user.role}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSaveInfo} className="flex-1 flex flex-col justify-between space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">{t('full_name')}</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-3 w-4 h-4 text-text-secondary animate-flip-icon-on-rtl" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all rtl:pl-4 rtl:pr-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">{t('email_address')}</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-text-secondary animate-flip-icon-on-rtl" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all rtl:pl-4 rtl:pr-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {user.role === 'STUDENT' && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase">
+                      {lang === 'en' ? 'Interests / Career Focus' : 'الاهتمامات / التركيز المهني'}
+                    </label>
+                    <textarea
+                      value={interests}
+                      onChange={(e) => setInterests(e.target.value)}
+                      rows={2}
+                      placeholder={
+                        lang === 'en'
+                          ? "e.g., Web Development, Machine Learning..."
+                          : "مثال: تطوير الويب، التعلم الآلي..."
+                      }
+                      className="w-full px-3 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4 mt-auto">
+                <button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                  className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-1.5 transition-transform hover:scale-102"
+                >
+                  {updateProfileMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('save_changes')}
+                </button>
+              </div>
+            </form>
           </div>
 
-          <div className="text-center sm:text-left space-y-1.5 flex-1">
-            <h3 className="text-base font-bold text-text-primary">{user.name}</h3>
-            <p className="text-xs text-text-secondary">{user.email}</p>
-            <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
-              <span className="px-2.5 py-0.5 bg-mint-50 border border-mint-100 text-mint-500 rounded-md text-[10px] font-bold uppercase tracking-wider">
-                {user.role}
-              </span>
-            </div>
-            <p className="text-[10px] text-text-secondary pt-1">
-              {lang === 'en'
-                ? '* Hover over the avatar frame to upload, preview, or delete your photo.'
-                : '* ضع مؤشر الفأرة فوق إطار الصورة الشخصية للرفع أو المعاينة أو الحذف.'}
-            </p>
+          {/* Right Card: Update Password */}
+          <div className="bg-white dark:bg-neutral-900 p-6 md:p-8 rounded-3xl border border-beige-200/80 dark:border-neutral-850 shadow-premium flex flex-col space-y-6">
+            <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2 border-b border-beige-100 dark:border-neutral-850 pb-2">
+              <Shield className="w-4 h-4 text-mint-500" />
+              {lang === 'en' ? 'Update Password' : 'تحديث كلمة المرور'}
+            </h3>
+
+            <form onSubmit={handlePasswordSubmit} className="flex-1 flex flex-col justify-between space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">
+                    {lang === 'en' ? 'Current Password *' : 'كلمة المرور الحالية *'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">
+                    {lang === 'en' ? 'New Password *' : 'كلمة المرور الجديدة *'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-text-secondary uppercase">
+                    {lang === 'en' ? 'Confirm New Password *' : 'تأكيد كلمة المرور الجديدة *'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3 py-2 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary dark:text-neutral-250 focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 mt-auto">
+                <button
+                  type="submit"
+                  disabled={changePasswordMutation.isPending}
+                  className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-1.5 transition-transform hover:scale-102"
+                >
+                  {changePasswordMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {lang === 'en' ? 'Update Password' : 'تحديث كلمة المرور'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-
-        {/* Input Form */}
-        <form onSubmit={handleSaveInfo} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-text-secondary uppercase">{t('full_name')}</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-3.5 w-4 h-4 text-text-secondary animate-flip-icon-on-rtl" />
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-beige-50/50 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all rtl:pl-4 rtl:pr-10"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-text-secondary uppercase">{t('email_address')}</label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-text-secondary animate-flip-icon-on-rtl" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-beige-50/50 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all rtl:pl-4 rtl:pr-10"
-                required
-              />
-            </div>
-          </div>
-
-          {user.role === 'STUDENT' && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-text-secondary uppercase">
-                {lang === 'en' ? 'Interests / Career Focus' : 'الاهتمامات / التركيز المهني'}
-              </label>
-              <textarea
-                value={interests}
-                onChange={(e) => setInterests(e.target.value)}
-                rows={3}
-                placeholder={
-                  lang === 'en'
-                    ? "e.g., Web Development, Machine Learning, iOS apps, Cybersecurity..."
-                    : "مثال: تطوير الويب، التعلم الآلي، تطبيقات آيفون، الأمن السيبراني..."
-                }
-                className="w-full px-4 py-3 bg-beige-50/50 border border-beige-200 rounded-xl text-xs font-semibold text-text-primary focus:border-mint-500 focus:ring-1 focus:ring-mint-500 outline-none transition-all"
-              />
-              <p className="text-[10px] text-text-secondary font-medium mt-1">
-                {lang === 'en'
-                  ? '* Interests are used to automatically generate your suggested Personal Development Plan.'
-                  : '* تُستخدم الاهتمامات لإنشاء خطة التطوير الشخصية المقترحة لك تلقائياً.'}
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              disabled={updateProfileMutation.isPending}
-              className="px-6 py-3 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft transition-all active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none flex items-center gap-1.5"
-            >
-              {updateProfileMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('save_changes')}
-            </button>
-          </div>
-        </form>
-      </div>
       )}
 
       {activeTab === 'transcript' && (

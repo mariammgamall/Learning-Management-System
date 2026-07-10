@@ -243,6 +243,7 @@ router.get('/projects', authGuard, async (req: AuthenticatedRequest, res: Respon
       technologies: typeof p.technologies === 'string' ? JSON.parse(p.technologies) : p.technologies,
       keyFeatures: typeof p.keyFeatures === 'string' ? JSON.parse(p.keyFeatures) : p.keyFeatures,
       gallery: typeof p.gallery === 'string' && p.gallery ? JSON.parse(p.gallery) : [],
+      submittedFiles: typeof p.submittedFiles === 'string' && p.submittedFiles ? JSON.parse(p.submittedFiles) : [],
     }));
 
     return res.status(200).json(parsed);
@@ -253,8 +254,12 @@ router.get('/projects', authGuard, async (req: AuthenticatedRequest, res: Respon
 });
 
 // @route   POST /api/v1/workspace/projects
-// @desc    Create a new project
-router.post('/projects', authGuard, upload.single('logo'), async (req: AuthenticatedRequest, res: Response) => {
+// @desc    Create a new project (with multiple files, demo video, etc.)
+router.post('/projects', authGuard, upload.fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'demoVideo', maxCount: 1 },
+  { name: 'files', maxCount: 10 }
+]), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user!;
     const {
@@ -269,6 +274,7 @@ router.post('/projects', authGuard, upload.single('logo'), async (req: Authentic
       githubUrl,
       docsUrl,
       teamId,
+      demoVideoUrl: textDemoVideoUrl
     } = req.body;
 
     if (!name || !description || !category) {
@@ -276,8 +282,24 @@ router.post('/projects', authGuard, upload.single('logo'), async (req: Authentic
     }
 
     let logoUrl = null;
-    if (req.file) {
-      logoUrl = await uploadToCloudinaryOrLocal(req.file, 'projects');
+    let demoVideoUrl = textDemoVideoUrl || null;
+    const submittedFilesArray: string[] = [];
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    if (files) {
+      if (files['logo']?.[0]) {
+        logoUrl = await uploadToCloudinaryOrLocal(files['logo'][0], 'projects');
+      }
+      if (files['demoVideo']?.[0]) {
+        demoVideoUrl = await uploadToCloudinaryOrLocal(files['demoVideo'][0], 'projects');
+      }
+      if (files['files']) {
+        for (const file of files['files']) {
+          const fileUrl = await uploadToCloudinaryOrLocal(file, 'project_submissions');
+          submittedFilesArray.push(fileUrl);
+        }
+      }
     }
 
     const techArray = typeof technologies === 'string' ? JSON.parse(technologies) : (technologies || []);
@@ -296,6 +318,8 @@ router.post('/projects', authGuard, upload.single('logo'), async (req: Authentic
         liveDemoUrl,
         githubUrl,
         docsUrl,
+        demoVideoUrl,
+        submittedFiles: JSON.stringify(submittedFilesArray),
         teamId: teamId || null,
         ownerId: user.id,
       },

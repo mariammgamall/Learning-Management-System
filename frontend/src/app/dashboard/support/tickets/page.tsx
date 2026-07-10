@@ -367,21 +367,35 @@ export default function SupportTicketsPage() {
                 </p>
 
                 {ticket.attachment && (
-                  <div className="mt-2.5 p-2 bg-white dark:bg-neutral-900 border border-beige-100 dark:border-neutral-800 rounded-lg flex items-center justify-between gap-3 max-w-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Paperclip className="w-3.5 h-3.5 text-mint-500 flex-shrink-0" />
-                      <span className="text-[10px] font-bold truncate block dark:text-neutral-300">
-                        {ticket.attachment.split('/').pop() || 'attachment.png'}
-                      </span>
-                    </div>
-                    <a
-                      href={ticket.attachment}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 bg-beige-100 dark:bg-neutral-800 hover:bg-beige-200 rounded-lg flex items-center justify-center flex-shrink-0"
-                    >
-                      <Download className="w-3.5 h-3.5 text-text-secondary" />
-                    </a>
+                  <div className="mt-4 space-y-2 max-w-sm">
+                    <span className="text-[9px] font-black text-text-secondary uppercase tracking-wider block">Attachment / Screenshot</span>
+                    {ticket.attachment.match(/\.(jpeg|jpg|gif|png|webp)$/i) || ticket.attachment.includes('cloudinary') ? (
+                      <div className="relative group rounded-xl overflow-hidden border border-beige-250 dark:border-neutral-800 bg-beige-50 dark:bg-neutral-950 p-1 flex justify-center">
+                        <img
+                          src={ticket.attachment}
+                          alt="Screenshot Attachment"
+                          className="max-h-48 object-contain rounded-lg hover:scale-[1.02] transition-transform cursor-pointer"
+                          onClick={() => window.open(ticket.attachment, '_blank')}
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-white dark:bg-neutral-900 border border-beige-100 dark:border-neutral-800 rounded-lg flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Paperclip className="w-3.5 h-3.5 text-mint-500 flex-shrink-0" />
+                          <span className="text-[10px] font-bold truncate block dark:text-neutral-300">
+                            {ticket.attachment.split('/').pop() || 'attachment.png'}
+                          </span>
+                        </div>
+                        <a
+                          href={ticket.attachment}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 bg-beige-100 dark:bg-neutral-800 hover:bg-beige-200 rounded-lg flex items-center justify-center flex-shrink-0"
+                        >
+                          <Download className="w-3.5 h-3.5 text-text-secondary" />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -414,15 +428,26 @@ export default function SupportTicketsPage() {
                         }`}>
                           <p>{msg.message}</p>
                           {msg.attachment && (
-                            <a
-                              href={msg.attachment}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 flex items-center gap-1 text-[9px] underline font-black block"
-                            >
-                              <Paperclip className="w-3.5 h-3.5" />
-                              View Attachment
-                            </a>
+                            <div className="mt-2 space-y-1">
+                              {msg.attachment.match(/\.(jpeg|jpg|gif|png|webp)$/i) || msg.attachment.includes('cloudinary') ? (
+                                <img
+                                  src={msg.attachment}
+                                  alt="Attached Screenshot"
+                                  className="max-h-32 object-contain rounded-lg border border-beige-200/50 cursor-pointer hover:opacity-90"
+                                  onClick={() => window.open(msg.attachment, '_blank')}
+                                />
+                              ) : (
+                                <a
+                                  href={msg.attachment}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-[9px] underline font-black"
+                                >
+                                  <Paperclip className="w-3.5 h-3.5" />
+                                  View Attachment
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
 

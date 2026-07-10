@@ -190,10 +190,10 @@ export default function MailboxPage() {
   // Filter emails by search query
   const filteredEmails = emails.filter((email: any) => {
     const term = searchQuery.toLowerCase();
-    const subMatch = email.subject.toLowerCase().includes(term);
-    const msgMatch = email.message.toLowerCase().includes(term);
-    const senderName = email.sender?.name.toLowerCase().includes(term);
-    const receiverName = email.receiver?.name.toLowerCase().includes(term);
+    const subMatch = (email.subject || '').toLowerCase().includes(term);
+    const msgMatch = (email.message || email.description || '').toLowerCase().includes(term);
+    const senderName = (email.sender?.name || '').toLowerCase().includes(term);
+    const receiverName = (email.receiver?.name || '').toLowerCase().includes(term);
     return subMatch || msgMatch || senderName || receiverName;
   });
 

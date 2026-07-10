@@ -86,13 +86,17 @@ async function main() {
   // Support Help Centre
   const support = await prisma.user.upsert({
     where: { email: 'support@lms.com' },
-    update: { password: passwordHash },
+    update: { 
+      password: passwordHash,
+      profilePhoto: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=200'
+    },
     create: {
       email: 'support@lms.com',
       name: 'Help Centre Support',
       password: passwordHash,
       role: Role.SUPPORT,
       isActive: true,
+      profilePhoto: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=200',
     },
   });
 

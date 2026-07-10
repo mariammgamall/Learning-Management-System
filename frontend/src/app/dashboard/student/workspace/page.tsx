@@ -53,10 +53,23 @@ export default function StudentWorkspacePage() {
   const [projGithub, setProjGithub] = useState('');
   const [projDocs, setProjDocs] = useState('');
   const [projTeamId, setProjTeamId] = useState('');
+  const [projVideoUrl, setProjVideoUrl] = useState('');
+  const [projLogo, setProjLogo] = useState<File | null>(null);
+  const [projVideoFile, setProjVideoFile] = useState<File | null>(null);
+  const [projFiles, setProjFiles] = useState<FileList | null>(null);
   const [isCreatingProj, setIsCreatingProj] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedInternship, setSelectedInternship] = useState<any>(null);
+
+  const formatExternalUrl = (url: string) => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    return `https://${trimmed}`;
+  };
 
   // Queries
   const { data: teams = [], isLoading: isLoadingTeams } = useQuery({
@@ -133,12 +146,14 @@ export default function StudentWorkspacePage() {
   });
 
   const createProjMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      await api.post('/workspace/projects', payload);
+    mutationFn: async (formData: FormData) => {
+      await api.post('/workspace/projects', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace-projects'] });
-      addToast(lang === 'en' ? 'Project created successfully!' : 'تم إنشاء المشروع بنجاح!', 'success');
+      addToast(lang === 'en' ? 'Project created/submitted successfully!' : 'تم إنشاء وتسليم المشروع بنجاح!', 'success');
       setIsCreateProjOpen(false);
       // Reset form
       setProjName('');
@@ -152,6 +167,10 @@ export default function StudentWorkspacePage() {
       setProjGithub('');
       setProjDocs('');
       setProjTeamId('');
+      setProjVideoUrl('');
+      setProjLogo(null);
+      setProjVideoFile(null);
+      setProjFiles(null);
     },
     onError: (err: any) => {
       addToast(err.response?.data?.message || 'Failed to create project', 'error');
@@ -185,19 +204,33 @@ export default function StudentWorkspacePage() {
     const techsArray = projTechs.split(',').map(s => s.trim()).filter(Boolean);
     const featuresArray = projFeatures.split(',').map(s => s.trim()).filter(Boolean);
 
-    createProjMutation.mutate({
-      name: projName,
-      description: projDesc,
-      category: projCategory,
-      technologies: techsArray,
-      keyFeatures: featuresArray,
-      status: projStatus,
-      completionPercentage: projProgress,
-      liveDemoUrl: projDemo || null,
-      githubUrl: projGithub || null,
-      docsUrl: projDocs || null,
-      teamId: projTeamId || null,
-    });
+    const formData = new FormData();
+    formData.append('name', projName);
+    formData.append('description', projDesc);
+    formData.append('category', projCategory);
+    formData.append('technologies', JSON.stringify(techsArray));
+    formData.append('keyFeatures', JSON.stringify(featuresArray));
+    formData.append('status', projStatus);
+    formData.append('completionPercentage', String(projProgress));
+    if (projDemo) formData.append('liveDemoUrl', projDemo);
+    if (projGithub) formData.append('githubUrl', projGithub);
+    if (projDocs) formData.append('docsUrl', projDocs);
+    if (projTeamId) formData.append('teamId', projTeamId);
+    if (projVideoUrl) formData.append('demoVideoUrl', projVideoUrl);
+
+    if (projLogo) {
+      formData.append('logo', projLogo);
+    }
+    if (projVideoFile) {
+      formData.append('demoVideo', projVideoFile);
+    }
+    if (projFiles) {
+      for (let i = 0; i < projFiles.length; i++) {
+        formData.append('files', projFiles[i]);
+      }
+    }
+
+    createProjMutation.mutate(formData);
   };
 
   // Filter invitations and active memberships
@@ -803,6 +836,49 @@ export default function StudentWorkspacePage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block">Project Logo File</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setProjLogo(e.target.files?.[0] || null)}
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block">Submit Project Files / Code (Multiple)</label>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => setProjFiles(e.target.files)}
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block">Demo Video URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://youtube.com/..."
+                    value={projVideoUrl}
+                    onChange={(e) => setProjVideoUrl(e.target.value)}
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block">Or Upload Demo Video File</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => setProjVideoFile(e.target.files?.[0] || null)}
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={createProjMutation.isPending}
@@ -867,11 +943,59 @@ export default function StudentWorkspacePage() {
                 </div>
               )}
 
+              {/* Demo Video Player or Link */}
+              {selectedProject.demoVideoUrl && (
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-text-secondary uppercase tracking-wider block">Demo Video</span>
+                  {selectedProject.demoVideoUrl.match(/\.(mp4|webm|ogg)$/i) || selectedProject.demoVideoUrl.includes('cloudinary') ? (
+                    <video
+                      src={formatExternalUrl(selectedProject.demoVideoUrl)}
+                      controls
+                      className="w-full rounded-xl border border-beige-200 dark:border-neutral-805 max-h-[200px] bg-black"
+                    />
+                  ) : (
+                    <a
+                      href={formatExternalUrl(selectedProject.demoVideoUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-beige-50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-800 text-text-primary dark:text-neutral-200 rounded-xl hover:text-mint-500 font-bold block"
+                    >
+                      <ExternalLink className="w-4 h-4 text-mint-500" />
+                      {lang === 'en' ? 'Watch Demo Video' : 'مشاهدة الفيديو التوضيحي للمشروع'}
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Submitted Files and Code */}
+              {selectedProject.submittedFiles && selectedProject.submittedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-text-secondary uppercase tracking-wider block">Submitted Project Code / Files</span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.submittedFiles.map((fileUrl: string, idx: number) => {
+                      const fileName = fileUrl.split('/').pop() || `Attachment_${idx + 1}`;
+                      return (
+                        <a
+                          key={idx}
+                          href={formatExternalUrl(fileUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-mint-50/50 dark:bg-mint-950/20 text-mint-600 dark:text-mint-400 text-[10px] font-bold rounded-lg border border-mint-100 hover:border-mint-300"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          {fileName}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Project Links */}
               <div className="border-t border-beige-50 dark:border-neutral-850 pt-4 flex gap-3">
                 {selectedProject.liveDemoUrl && (
                   <a
-                    href={selectedProject.liveDemoUrl}
+                    href={formatExternalUrl(selectedProject.liveDemoUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 px-3 py-1.5 bg-mint-500 hover:bg-mint-400 text-white font-bold rounded-lg text-[10px]"
@@ -882,7 +1006,7 @@ export default function StudentWorkspacePage() {
                 )}
                 {selectedProject.githubUrl && (
                   <a
-                    href={selectedProject.githubUrl}
+                    href={formatExternalUrl(selectedProject.githubUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-750 text-white font-bold rounded-lg text-[10px]"

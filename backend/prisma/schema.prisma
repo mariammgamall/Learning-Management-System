@@ -397,6 +397,8 @@ model WorkspaceProject {
   liveDemoUrl          String?
   githubUrl            String?
   docsUrl              String?
+  demoVideoUrl         String?
+  submittedFiles       String?
   teamId               String?
   team                 WorkspaceTeam? @relation(fields: [teamId], references: [id], onDelete: SetNull)
   ownerId              String
