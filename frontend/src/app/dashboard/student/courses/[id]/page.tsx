@@ -551,9 +551,10 @@ export default function StudentCourseHub() {
       setQuizQuestions([]);
       setQuizAnswers({});
 
+      const totalPoints = activeQuiz?.questions?.reduce((acc: number, q: any) => acc + (q.points || 0), 0) || 100;
       const finalScoreMsg = data.hasShortAnswers
         ? 'Quiz submitted! Pending short answer manual grading.'
-        : `Quiz completed! Auto score: ${data.score?.toFixed(1)}/100`;
+        : `Quiz completed! Auto score: ${data.score?.toFixed(1)}/${totalPoints}`;
       
       addToast(finalScoreMsg, 'success');
     },
@@ -1159,7 +1160,7 @@ export default function StudentCourseHub() {
                                   Submitted: {new Date(attempt.submittedAt).toLocaleDateString()}
                                 </span>
                                 <span className="font-extrabold text-mint-500 text-sm">
-                                  {attempt.score !== null ? `${attempt.score.toFixed(1)}/100` : 'Pending Grade'}
+                                  {attempt.score !== null ? `${attempt.score.toFixed(1)}/${quiz.questions?.reduce((acc: number, q: any) => acc + (q.points || 0), 0) || 100}` : 'Pending Grade'}
                                 </span>
                               </div>
                             </div>

@@ -207,6 +207,7 @@ router.get('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) =
         quizzes: {
           orderBy: { createdAt: 'asc' },
           include: {
+            questions: true,
             attempts: user.role === Role.STUDENT
               ? {
                   where: { studentId: user.id },
@@ -245,6 +246,31 @@ router.get('/:id', authGuard, async (req: AuthenticatedRequest, res: Response) =
           }
         });
       }
+    }
+
+    if (course.quizzes) {
+      course.quizzes.forEach((quiz: any) => {
+        if (quiz.questions) {
+          quiz.questions = quiz.questions.map((q: any) => ({
+            ...q,
+            options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+          }));
+        }
+        if (quiz.attempts) {
+          quiz.attempts = quiz.attempts.map((att: any) => {
+            let parsedAnswers = {};
+            try {
+              parsedAnswers = typeof att.answers === 'string' ? JSON.parse(att.answers) : att.answers;
+            } catch (e) {
+              parsedAnswers = {};
+            }
+            return {
+              ...att,
+              answers: parsedAnswers,
+            };
+          });
+        }
+      });
     }
 
     return res.status(200).json(course);

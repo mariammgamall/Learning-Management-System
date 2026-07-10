@@ -98,6 +98,7 @@ router.post('/', authGuard, roleGuard('DOCTOR', 'TA', 'ADMIN'), upload.array('fi
             type: q.type || 'MCQ',
             options: JSON.stringify(q.options || []), // SQLite string mapping
             correctAnswer: q.correctAnswer || q.correctOption || '',
+            points: q.points !== undefined ? parseInt(q.points) : 1,
           })),
         },
       },
@@ -290,7 +291,6 @@ router.post('/:id/submit', authGuard, roleGuard('STUDENT'), async (req: Authenti
 
     // Auto-grade MCQs and True/False
     let score = 0;
-    let totalAutoGradedQuestions = 0;
     let hasShortAnswers = false;
 
     for (const q of quiz.questions) {
@@ -298,17 +298,15 @@ router.post('/:id/submit', authGuard, roleGuard('STUDENT'), async (req: Authenti
       const correctAns = q.correctAnswer.trim();
 
       if (q.type === 'MCQ' || q.type === 'TRUE_FALSE') {
-        totalAutoGradedQuestions++;
         if (studentAns && studentAns.toLowerCase() === correctAns.toLowerCase()) {
-          score++;
+          score += q.points;
         }
       } else if (q.type === 'SHORT_ANSWER') {
         hasShortAnswers = true;
       }
     }
 
-    const rawScore = totalAutoGradedQuestions > 0 ? (score / totalAutoGradedQuestions) * 100 : 0;
-    const finalScore = hasShortAnswers ? null : rawScore;
+    const finalScore = hasShortAnswers ? null : score;
 
     const submittedAttempt = await prisma.quizAttempt.update({
       where: { id: activeAttempt.id },
@@ -319,9 +317,10 @@ router.post('/:id/submit', authGuard, roleGuard('STUDENT'), async (req: Authenti
       },
     });
 
+    const totalQuizPoints = quiz.questions.reduce((acc, q) => acc + q.points, 0);
     const resultMsg = hasShortAnswers
       ? `You submitted Quiz "${quiz.title}". Short answer questions are pending grading.`
-      : `You completed Quiz "${quiz.title}". Score: ${finalScore?.toFixed(1)}/100`;
+      : `You completed Quiz "${quiz.title}". Score: ${finalScore?.toFixed(1)}/${totalQuizPoints}`;
 
     await prisma.notification.create({
       data: {

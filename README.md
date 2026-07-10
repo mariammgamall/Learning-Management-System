@@ -73,7 +73,9 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
 
 *   **📝 Flexible Quiz Builder & Student Attempt Workspace**:
     - **MCQ, True/False & Short Answer**: Supported three question types in the quiz constructor inside both Doctor and TA portals. Pick correct answers via True/False dropdowns or define grading criteria in textareas.
-    - **Manual Grading**: Doctors and TAs can review and grade essay/short answer attempts manually using an overwrite score dialog.
+    - **Custom Question Points/Marks**: Instructors can assign custom point weights/marks to individual questions during quiz creation, calculating total quiz points dynamically.
+    - **Detailed Grading Desk Logs**: When grading quiz attempts, Doctors and TAs can view a complete **Submitted Answers Log** displaying each question, its points weight, the student's submitted answer (color-coded for accuracy), and the correct reference answer/criteria.
+    - **Manual Grading**: Doctors and TAs can review student submissions inline and apply manual score overrides out of the dynamic total points weight of the quiz.
     - **Submit Button Fix**: Integrated a floating quiz layout wrapped inside Next.js portal boundaries to guarantee the submit button is never hidden by the floating AI assistant widget.
 
 *   **📊 Student Profile, Academic Transcript & PDF Report**:

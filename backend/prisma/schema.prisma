@@ -169,6 +169,7 @@ model Question {
   type          String   // MCQ, TRUE_FALSE, SHORT_ANSWER
   options       String   // JSON stringified array of options
   correctAnswer String
+  points        Int      @default(1)
 }
 
 model QuizAttempt {

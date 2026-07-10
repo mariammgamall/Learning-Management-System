@@ -58,6 +58,7 @@ export const questionSchema = z.object({
   type: z.enum(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER']),
   options: z.array(z.string()).default([]),
   correctAnswer: z.string().min(1, 'Correct answer must be provided'),
+  points: z.coerce.number().int().min(1).optional().default(1),
 });
 
 export const quizCreateSchema = z.object({

@@ -335,7 +335,7 @@ export default function DoctorCourseWorkspace() {
   const [quizShowResults, setQuizShowResults] = useState('IMMEDIATE');
   const [quizFiles, setQuizFiles] = useState<File[]>([]);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([
-    { text: '', type: 'MCQ', options: ['', ''], correctAnswer: '' }
+    { text: '', type: 'MCQ', options: ['', ''], correctAnswer: '', points: 1 }
   ]);
 
   const [manualQuizScore, setManualQuizScore] = useState('');
@@ -539,7 +539,7 @@ export default function DoctorCourseWorkspace() {
       setIsAddQuizOpen(false);
       setQuizTitle('');
       setQuizFiles([]);
-      setQuizQuestions([{ text: '', type: 'MCQ', options: ['', ''], correctAnswer: '' }]);
+      setQuizQuestions([{ text: '', type: 'MCQ', options: ['', ''], correctAnswer: '', points: 1 }]);
       addToast('Quiz published successfully!', 'success');
     },
     onError: (err: any) => {
@@ -1046,7 +1046,7 @@ export default function DoctorCourseWorkspace() {
                                 <div className="flex items-center gap-3">
                                   {attempt.score !== null ? (
                                     <span className="font-extrabold text-mint-500 text-sm">
-                                      {attempt.score.toFixed(1)} / 100
+                                      {attempt.score.toFixed(1)} / {quiz.questions?.reduce((acc: number, q: any) => acc + (q.points || 0), 0) || 100}
                                     </span>
                                   ) : (
                                     <div className="flex items-center gap-2">
@@ -1726,7 +1726,7 @@ export default function DoctorCourseWorkspace() {
                     <span className="text-[10px] font-bold text-text-secondary uppercase">Questions</span>
                     <button
                       type="button"
-                      onClick={() => setQuizQuestions([...quizQuestions, { text: '', type: 'MCQ', options: ['', ''], correctAnswer: '' }])}
+                      onClick={() => setQuizQuestions([...quizQuestions, { text: '', type: 'MCQ', options: ['', ''], correctAnswer: '', points: 1 }])}
                       className="text-[10px] font-bold text-mint-500"
                     >
                       + Add Question
@@ -1743,7 +1743,7 @@ export default function DoctorCourseWorkspace() {
                         <X className="w-4 h-4" />
                       </button>
 
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1 col-span-2">
                           <label className="text-[9px] font-bold text-text-primary block">Question Prompt</label>
                           <input
@@ -1754,7 +1754,7 @@ export default function DoctorCourseWorkspace() {
                               list[idx].text = e.target.value;
                               setQuizQuestions(list);
                             }}
-                            className="w-full px-3 py-2 text-xs"
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
                           />
                         </div>
 
@@ -1769,12 +1769,28 @@ export default function DoctorCourseWorkspace() {
                               list[idx].correctAnswer = '';
                               setQuizQuestions(list);
                             }}
-                            className="w-full px-3 py-2 text-xs"
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg bg-white"
                           >
                             <option value="MCQ">MCQ</option>
                             <option value="TRUE_FALSE">True / False</option>
                             <option value="SHORT_ANSWER">Short Answer</option>
                           </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-text-primary block">Points</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={q.points || 1}
+                            onChange={(e) => {
+                              const list = [...quizQuestions];
+                              const val = parseInt(e.target.value);
+                              list[idx].points = isNaN(val) ? 1 : val < 1 ? 1 : val;
+                              setQuizQuestions(list);
+                            }}
+                            className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg outline-none bg-white font-bold text-text-primary"
+                          />
                         </div>
                       </div>
 
@@ -1873,66 +1889,119 @@ export default function DoctorCourseWorkspace() {
       )}
 
       {/* GRADE QUIZ ATTEMPT MODAL */}
-      {viewingQuizAttempt && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4 overflow-y-auto">
-            <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-premium border border-beige-200 my-8 space-y-4 text-xs font-semibold">
-              <div className="flex justify-between items-center border-b border-beige-100 pb-2">
-                <h3 className="text-sm font-bold text-text-primary">Grade Quiz Attempt</h3>
-                <button onClick={() => setViewingQuizAttempt(null)} className="text-text-secondary hover:text-text-primary">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <span className="text-text-secondary block">Student Name:</span>
-                  <span className="text-text-primary block">{viewingQuizAttempt.student?.name}</span>
+      {viewingQuizAttempt && (() => {
+        const activeGradingQuiz = course?.quizzes?.find((q: any) => q.id === viewingQuizAttempt.quizId);
+        const totalQuizPoints = activeGradingQuiz?.questions?.reduce((acc: number, q: any) => acc + (q.points || 0), 0) || 100;
+        return (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[5px] flex items-center justify-center p-4 overflow-y-auto">
+              <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-premium border border-beige-200 my-8 space-y-4 text-xs font-semibold">
+                <div className="flex justify-between items-center border-b border-beige-100 pb-2">
+                  <h3 className="text-sm font-bold text-text-primary">Grade Quiz Attempt</h3>
+                  <button onClick={() => setViewingQuizAttempt(null)} className="text-text-secondary hover:text-text-primary">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="p-3 bg-beige-50 border border-beige-200 rounded-xl space-y-3">
-                  <span className="text-[10px] font-bold text-text-secondary block">Autograded System Score:</span>
-                  <span className="text-lg font-black text-text-primary">
-                    {viewingQuizAttempt.score} / {viewingQuizAttempt.quiz?.questions?.reduce((acc: number, q: any) => acc + (q.points || 0), 0) || 100}
-                  </span>
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-text-secondary block">Student Name:</span>
+                    <span className="text-text-primary block text-sm font-bold">{viewingQuizAttempt.student?.name}</span>
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-text-primary block">Overwrite Score Input</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={manualQuizScore}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val !== '' && parseFloat(val) < 0) {
-                        setManualQuizScore('0');
-                      } else {
-                        setManualQuizScore(val);
-                      }
+                  <div className="p-3 bg-beige-50 border border-beige-200 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold text-text-secondary block">Autograded System Score:</span>
+                    <span className="text-lg font-black text-text-primary">
+                      {viewingQuizAttempt.score !== null ? viewingQuizAttempt.score.toFixed(1) : 'Pending'} / {totalQuizPoints}
+                    </span>
+                  </div>
+
+                  {/* Submitted Answers Log */}
+                  {activeGradingQuiz?.questions && (
+                    <div className="space-y-3 border-t border-beige-100 pt-3">
+                      <span className="text-[10px] font-black text-text-primary uppercase tracking-wider block">Submitted Answers Log:</span>
+                      <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        {activeGradingQuiz.questions.map((q: any, qIdx: number) => {
+                          const studentAns = viewingQuizAttempt.answers?.[q.id];
+                          const isCorrect = q.type === 'SHORT_ANSWER' ? null : (studentAns?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase());
+                          
+                          return (
+                            <div key={q.id} className="p-3 bg-beige-50/50 rounded-xl border border-beige-200/85 space-y-1.5 text-left">
+                              <div className="flex justify-between items-start gap-2">
+                                <span className="font-bold text-text-primary text-[11px] leading-snug">
+                                  Q{qIdx + 1}. {q.text}
+                                </span>
+                                <div className="flex gap-1 items-center flex-shrink-0">
+                                  <span className="text-[8px] px-1.5 py-0.5 rounded font-black uppercase bg-beige-200 text-text-secondary">
+                                    {q.type}
+                                  </span>
+                                  <span className="text-[8px] px-1.5 py-0.5 rounded font-black uppercase bg-teal-50 text-teal-600">
+                                    {q.points || 1} pts
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] mt-1 border-t border-beige-100/50 pt-1">
+                                <div>
+                                  <span className="text-text-secondary block font-semibold text-[9px]">Student's Answer:</span>
+                                  <span className={`font-bold block break-words whitespace-pre-wrap ${
+                                    q.type === 'SHORT_ANSWER'
+                                      ? 'text-indigo-600 font-extrabold bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50 mt-0.5'
+                                      : isCorrect ? 'text-mint-600' : 'text-rose-500'
+                                  }`}>
+                                    {studentAns || <span className="italic opacity-60">Not Answered</span>}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-text-secondary block font-semibold text-[9px]">Correct Answer / Criteria:</span>
+                                  <span className="font-bold text-text-primary block break-words whitespace-pre-wrap mt-0.5">
+                                    {q.correctAnswer || <span className="italic opacity-60">None</span>}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-text-primary block">Overwrite Score Input</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={manualQuizScore}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val !== '' && parseFloat(val) < 0) {
+                          setManualQuizScore('0');
+                        } else {
+                          setManualQuizScore(val);
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-xs border border-beige-200 rounded-lg outline-none bg-white font-semibold text-text-primary"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!manualQuizScore) return addToast('Please enter a score', 'error');
+                      gradeQuizAttemptMutation.mutate({
+                        attemptId: viewingQuizAttempt.id,
+                        score: parseFloat(manualQuizScore)
+                      });
                     }}
-                    className="w-full px-3 py-2 text-xs"
-                  />
+                    disabled={gradeQuizAttemptMutation.isPending}
+                    className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft"
+                  >
+                    {gradeQuizAttemptMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Quiz Score'}
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => {
-                    if (!manualQuizScore) return addToast('Please enter a score', 'error');
-                    gradeQuizAttemptMutation.mutate({
-                      attemptId: viewingQuizAttempt.id,
-                      score: parseFloat(manualQuizScore)
-                    });
-                  }}
-                  disabled={gradeQuizAttemptMutation.isPending}
-                  className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft"
-                >
-                  {gradeQuizAttemptMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Quiz Score'}
-                </button>
               </div>
             </div>
-          </div>
-        </ModalPortal>
-      )}
+          </ModalPortal>
+        );
+      })()}
 
       {/* Fullscreen QR Code Lightbox */}
       {fullscreenQrUrl && (
