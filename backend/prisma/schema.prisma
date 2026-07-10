@@ -35,6 +35,8 @@ model User {
   posts             Post[]
   likedPosts        Post[]           @relation("UserLikesPost")
   savedPosts        Post[]           @relation("UserSavedPosts")
+  sentEmails        Email[]          @relation("SentEmails")
+  receivedEmails    Email[]          @relation("ReceivedEmails")
 }
 
 model Course {
@@ -295,4 +297,18 @@ model PostMedia {
   url       String
   type      String   // PHOTO or VIDEO
   createdAt DateTime @default(now())
+}
+
+model Email {
+  id           String   @id @default(uuid())
+  senderId     String
+  sender       User     @relation("SentEmails", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId   String
+  receiver     User     @relation("ReceivedEmails", fields: [receiverId], references: [id], onDelete: Cascade)
+  subject      String
+  message      String
+  attachment   String?
+  createdAt    DateTime @default(now())
+  isRead       Boolean  @default(false)
+  isSupport    Boolean  @default(false)
 }

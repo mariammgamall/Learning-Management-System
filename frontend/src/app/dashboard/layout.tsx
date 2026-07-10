@@ -29,6 +29,7 @@ import {
   Moon,
   User,
   Compass,
+  Mail,
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -45,6 +46,47 @@ export default function DashboardLayout({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
+  // Help Centre Support States
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [supportSubject, setSupportSubject] = useState('');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportFile, setSupportFile] = useState<File | null>(null);
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportSubject.trim() || !supportMessage.trim()) {
+      addToast(lang === 'en' ? 'Please fill all required fields' : 'يرجى ملء جميع الحقول المطلوبة', 'error');
+      return;
+    }
+    
+    setIsSubmittingSupport(true);
+    try {
+      const formData = new FormData();
+      formData.append('subject', supportSubject);
+      formData.append('message', supportMessage);
+      if (supportFile) {
+        formData.append('attachment', supportFile);
+      }
+      
+      await api.post('/emails/support', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      addToast(lang === 'en' ? 'Support ticket submitted successfully!' : 'تم إرسال تذكرة الدعم بنجاح!', 'success');
+      setSupportSubject('');
+      setSupportMessage('');
+      setSupportFile(null);
+      setIsSupportOpen(false);
+    } catch (err: any) {
+      addToast(err.response?.data?.message || 'Failed to submit support request', 'error');
+    } finally {
+      setIsSubmittingSupport(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -123,6 +165,7 @@ export default function DashboardLayout({
   const getSidebarLinks = (role: string) => {
     const commonLinks = [
       { label: lang === 'en' ? 'Social Feed' : 'ساحة التفاعل', href: '/dashboard/feed', icon: Compass },
+      { label: lang === 'en' ? 'Mailbox' : 'صندوق البريد', href: '/dashboard/mailbox', icon: Mail },
       { label: t('meetings'), href: '/dashboard/meetings', icon: Video },
       { label: t('profile'), href: '/dashboard/profile', icon: User },
     ];
@@ -152,6 +195,11 @@ export default function DashboardLayout({
           { label: t('dashboard'), href: '/dashboard/student', icon: LayoutDashboard },
           { label: t('catalog'), href: '/dashboard/student/catalog', icon: BookOpen },
           { label: t('courses'), href: '/dashboard/student/courses', icon: Award },
+          ...commonLinks,
+        ];
+      case 'SUPPORT':
+        return [
+          { label: lang === 'en' ? 'Support Desk' : 'مكتب الدعم الفني', href: '/dashboard/mailbox?view=support', icon: LayoutDashboard },
           ...commonLinks,
         ];
       default:
@@ -291,6 +339,15 @@ export default function DashboardLayout({
             >
               {darkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5" />}
             </button>
+
+            {/* Help Centre Support Button */}
+            <button
+              onClick={() => setIsSupportOpen(true)}
+              className="p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 transition-colors"
+              title={lang === 'en' ? 'Help Centre Support' : 'مركز الدعم والمساعدة'}
+            >
+              <HelpCircle className="w-5 h-5 text-mint-500 hover:scale-110 transition-transform" />
+            </button>
             
             {/* Notification Ring bell */}
             <div className="relative">
@@ -415,6 +472,88 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex-1" onClick={() => setMobileSidebarOpen(false)} />
+        </div>
+      )}
+      {/* Help Centre Support Modal */}
+      {isSupportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-800 space-y-4 text-xs font-semibold animate-scale-up">
+            <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
+              <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-mint-500" />
+                {lang === 'en' ? 'LMS Help Centre Support' : 'مركز الدعم والمساعدة LMS'}
+              </h3>
+              <button 
+                onClick={() => setIsSupportOpen(false)} 
+                className="text-text-secondary hover:text-text-primary dark:text-neutral-400 dark:hover:text-neutral-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSupportSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Subject *' : 'الموضوع *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={supportSubject}
+                  onChange={(e) => setSupportSubject(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:bg-neutral-900 dark:text-neutral-200 font-semibold"
+                  placeholder={lang === 'en' ? 'e.g. Cannot submit assignment' : 'مثال: لا يمكنني رفع الواجب'}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Description / Message *' : 'وصف المشكلة / الرسالة *'}
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={supportMessage}
+                  onChange={(e) => setSupportMessage(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white dark:bg-neutral-900 dark:text-neutral-200 font-semibold"
+                  placeholder={lang === 'en' ? 'Provide details about the issue...' : 'اكتب تفاصيل المشكلة التي تواجهها...'}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-text-primary dark:text-neutral-300 block">
+                  {lang === 'en' ? 'Attach Screenshot (Optional)' : 'إرفاق لقطة شاشة (اختياري)'}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setSupportFile(e.target.files[0]);
+                    } else {
+                      setSupportFile(null);
+                    }
+                  }}
+                  className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200 cursor-pointer"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingSupport}
+                className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-2"
+              >
+                {isSubmittingSupport ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {lang === 'en' ? 'Sending Ticket...' : 'جاري الإرسال...'}
+                  </>
+                ) : (
+                  lang === 'en' ? 'Send Ticket' : 'إرسال تذكرة الدعم'
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

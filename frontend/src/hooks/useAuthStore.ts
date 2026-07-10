@@ -5,7 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'DOCTOR' | 'TA' | 'STUDENT';
+  role: 'ADMIN' | 'DOCTOR' | 'TA' | 'STUDENT' | 'SUPPORT';
   profilePhoto?: string | null;
   interests?: string | null;
 }

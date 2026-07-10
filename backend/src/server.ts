@@ -18,6 +18,7 @@ import dashboardRouter from './routes/dashboard';
 import notificationsRouter from './routes/notifications';
 import meetingsRouter from './routes/meetings';
 import postsRouter from './routes/posts';
+import emailsRouter from './routes/emails';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,6 +66,7 @@ app.use('/api/v1/dashboard', dashboardRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/meetings', meetingsRouter);
 app.use('/api/v1/posts', postsRouter);
+app.use('/api/v1/emails', emailsRouter);
 
 // Health Check Endpoint
 app.get('/api/v1/health', (req: Request, res: Response) => {

@@ -97,6 +97,12 @@ The system is styled with a gorgeous, high-end **Beige & Mint** color palette, c
         - Built-in machine translation corrector replacing error-prone translations (e.g. automatically correcting machine translation of "experience" from "سفر" to "تجارب").
     - **Seeded Data**: Seeded database with **20 high-quality discussions** by Doctors and TAs on subjects like consistency, UI/UX, mechanical engineering, and robotics, populated with realistic comments and likes from all users.
 
+*   **📩 Help Centre Support & Internal User-to-User Email Systems**:
+    - **Global Help Centre Button**: A persistent question mark icon (`HelpCircle` button) inside the top header allows users to send support tickets to the help center with a subject line, detailed message, and screenshot attachment.
+    - **Support Desk & Seeded Agent**: Created a default support agent account (`support@lms.com`, role `SUPPORT`) that accesses a specialized dashboard to view and respond to incoming help center tickets.
+    - **Dual-Pane Mailbox Client**: Integrated a modern mailbox workspace `/dashboard/mailbox` displaying Inbox, Sent, and Support folders with inline detail viewer, read/unread states, and attachment downloads.
+    - **Real-Time Recipient Search**: Composing an internal email features a real-time matching recipient search selector to easily message doctors, TAs, or peers.
+
 *   **🛡️ Custom Instructor LMS Portal Controls**:
     - Restructured the course control workspaces to prevent dashboard redundancies for teaching staff while preserving direct access inside course pages:
         - **Doctors' account**: Hides the Assignments Manager and Quizzes Builder options from their main control panel.
@@ -110,6 +116,7 @@ All seeded accounts use the password: **`Password@123`**
 | Role | Email Address | Account Name |
 | :--- | :--- | :--- |
 | **ADMIN** | `admin@lms.com` | System Admin |
+| **SUPPORT** | `support@lms.com` | Help Centre Support |
 | **DOCTOR** | `ahmedhagag@lms.com` | Dr. Ahmed Hagag |
 | **DOCTOR** | `hossamali@lms.com` | Dr. Hossam Ali |
 | **TA** | `youssefmohamed@lms.com` | Youssef Mohamed |

@@ -171,6 +171,31 @@ router.delete('/profile/photo', authGuard, async (req: AuthenticatedRequest, res
   }
 });
 
+// @route   GET /api/v1/users/contacts
+// @desc    Get all active users for contact matching (all authenticated users)
+router.get('/contacts', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const contacts = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        NOT: { id: req.user!.id },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        profilePhoto: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    return res.status(200).json(contacts);
+  } catch (error) {
+    console.error('Fetch contacts error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // ==========================================
 // 2. Parameterized Routes (Must be last)
 // ==========================================

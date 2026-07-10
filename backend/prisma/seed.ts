@@ -9,6 +9,7 @@ const Role = {
   DOCTOR: 'DOCTOR',
   TA: 'TA',
   STUDENT: 'STUDENT',
+  SUPPORT: 'SUPPORT',
 };
 
 const FileType = {
@@ -48,6 +49,7 @@ async function main() {
   await prisma.enrollment.deleteMany();
   await prisma.courseTA.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.email.deleteMany(); // Added to clean email table too!
 
   // Declare variables to store Course 4 lecture references for watched mapping
   let lecture4_1: any;
@@ -69,6 +71,19 @@ async function main() {
       name: 'System Admin',
       password: passwordHash,
       role: Role.ADMIN,
+      isActive: true,
+    },
+  });
+
+  // Support Help Centre
+  const support = await prisma.user.upsert({
+    where: { email: 'support@lms.com' },
+    update: { password: passwordHash },
+    create: {
+      email: 'support@lms.com',
+      name: 'Help Centre Support',
+      password: passwordHash,
+      role: Role.SUPPORT,
       isActive: true,
     },
   });
