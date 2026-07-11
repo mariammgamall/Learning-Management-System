@@ -443,4 +443,138 @@ router.get('/applications', authGuard, async (req: AuthenticatedRequest, res: Re
   }
 });
 
+
+// ==========================================
+// ADMIN: Internship Management Routes
+// ==========================================
+
+// @route   POST /api/v1/workspace/admin/internships
+// @desc    Create a new internship listing (Admin only)
+router.post('/admin/internships', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    const {
+      companyName, companyLogo, companyDescription, industry, website,
+      title, category, duration, mode, skills, responsibilities,
+      requirements, benefits, deadline,
+    } = req.body;
+
+    if (!companyName || !title || !skills || !deadline) {
+      return res.status(400).json({ message: 'companyName, title, skills, and deadline are required' });
+    }
+
+    const internship = await prisma.internship.create({
+      data: {
+        companyName, companyLogo, companyDescription, industry, website,
+        title, category, duration, mode: mode || 'Remote',
+        skills: typeof skills === 'string' ? skills : JSON.stringify(skills),
+        responsibilities, requirements, benefits,
+        deadline: new Date(deadline),
+      },
+    });
+
+    return res.status(201).json(internship);
+  } catch (error) {
+    console.error('Create internship error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   PUT /api/v1/workspace/admin/internships/:id
+// @desc    Update an internship listing (Admin only)
+router.put('/admin/internships/:id', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    const { id } = req.params;
+    const data = req.body;
+
+    if (data.skills && typeof data.skills !== 'string') {
+      data.skills = JSON.stringify(data.skills);
+    }
+    if (data.deadline) {
+      data.deadline = new Date(data.deadline);
+    }
+
+    const internship = await prisma.internship.update({
+      where: { id },
+      data,
+    });
+
+    return res.status(200).json(internship);
+  } catch (error) {
+    console.error('Update internship error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   DELETE /api/v1/workspace/admin/internships/:id
+// @desc    Delete an internship listing (Admin only)
+router.delete('/admin/internships/:id', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    const { id } = req.params;
+    await prisma.internship.delete({ where: { id } });
+
+    return res.status(200).json({ message: 'Internship deleted successfully' });
+  } catch (error) {
+    console.error('Delete internship error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   GET /api/v1/workspace/admin/applications
+// @desc    Get all internship applications (Admin only)
+router.get('/admin/applications', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    const applications = await prisma.internshipApplication.findMany({
+      include: {
+        internship: true,
+        student: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { appliedAt: 'desc' },
+    });
+
+    return res.status(200).json(applications);
+  } catch (error) {
+    console.error('Admin fetch applications error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// @route   PUT /api/v1/workspace/admin/applications/:id/status
+// @desc    Update application status (Admin only)
+router.put('/admin/applications/:id/status', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['Applied', 'Under Review', 'Interview', 'Accepted', 'Rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const application = await prisma.internshipApplication.update({
+      where: { id },
+      data: { status },
+    });
+
+    return res.status(200).json(application);
+  } catch (error) {
+    console.error('Update application status error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

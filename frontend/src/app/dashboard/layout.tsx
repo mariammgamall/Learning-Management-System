@@ -10,6 +10,7 @@ import CommandPalette from '../../components/CommandPalette';
 import AIChatbot from '../../components/AIChatbot';
 import { api } from '../../utils/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ModalPortal from '../../components/ModalPortal';
 import {
   GraduationCap,
   Users,
@@ -178,6 +179,7 @@ export default function DashboardLayout({
           { label: t('dashboard'), href: '/dashboard/admin', icon: LayoutDashboard },
           { label: t('admin_users'), href: '/dashboard/admin/users', icon: Users },
           { label: t('admin_courses'), href: '/dashboard/admin/courses', icon: BookOpen },
+          { label: lang === 'en' ? 'Internships' : 'فرص التدريب', href: '/dashboard/admin/internships', icon: Briefcase },
           ...commonLinks,
         ];
       case 'DOCTOR':
@@ -481,9 +483,10 @@ export default function DashboardLayout({
           <div className="flex-1" onClick={() => setMobileSidebarOpen(false)} />
         </div>
       )}
-      {/* Help Centre Support Modal */}
+      {/* Help Centre Support Modal — rendered via Portal to cover entire viewport */}
+      <ModalPortal>
       {isSupportOpen && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[9999] bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-md bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-800 space-y-4 text-xs font-semibold animate-scale-up">
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
               <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
@@ -563,6 +566,7 @@ export default function DashboardLayout({
           </div>
         </div>
       )}
+      </ModalPortal>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useToastStore } from '../../../../hooks/useToastStore';
 import { useAuthStore } from '../../../../hooks/useAuthStore';
 import { api } from '../../../../utils/api';
+import ModalPortal from '../../../../components/ModalPortal';
 import {
   Briefcase,
   Users,
@@ -699,6 +700,9 @@ export default function StudentWorkspacePage() {
         )}
       </div>
 
+      {/* ALL MODALS — rendered via Portal to document.body so the backdrop covers
+          the entire viewport including the fixed sidebar (which has its own stacking context) */}
+      <ModalPortal>
       {/* CREATE TEAM MODAL OVERLAY */}
       {isCreateTeamOpen && (
         <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
@@ -1308,6 +1312,7 @@ export default function StudentWorkspacePage() {
           </div>
         </div>
       )}
+      </ModalPortal>
     </div>
   );
 }

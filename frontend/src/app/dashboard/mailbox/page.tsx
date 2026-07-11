@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../hooks/useAuthStore';
 import { useToastStore } from '../../../hooks/useToastStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { api } from '../../../utils/api';
+import ModalPortal from '../../../components/ModalPortal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Mail,
@@ -645,6 +646,7 @@ export default function MailboxPage() {
       </div>
 
       {/* COMPOSE NEW EMAIL MODAL WINDOW */}
+      <ModalPortal>
       {isComposeOpen && (
         <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-800 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
@@ -783,6 +785,7 @@ export default function MailboxPage() {
           </div>
         </div>
       )}
+      </ModalPortal>
     </div>
   );
 }
