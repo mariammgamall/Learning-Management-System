@@ -440,6 +440,7 @@ model InternshipApplication {
   email        String     @default("")
   university   String     @default("")
   grade        String     @default("")
+  yearInUniversity String @default("")
   resumeUrl    String     @default("")
   portfolio    String?
 

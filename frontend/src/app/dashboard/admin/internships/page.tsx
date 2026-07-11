@@ -385,7 +385,7 @@ export default function AdminInternshipsPage() {
                   <tr className="bg-beige-50 dark:bg-neutral-850 border-b border-beige-200 dark:border-neutral-800">
                     <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider">Applicant</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider hidden sm:table-cell">Internship</th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider hidden md:table-cell">University / GPA</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider hidden md:table-cell">University / Year / GPA</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider">Status</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider hidden lg:table-cell">Applied</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black text-text-secondary uppercase tracking-wider">CV</th>
@@ -405,8 +405,8 @@ export default function AdminInternshipsPage() {
                           <p className="text-[9px] text-text-secondary">{app.internship?.companyName}</p>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-text-primary dark:text-neutral-200">{app.university}</p>
-                          <p className="text-[9px] text-text-secondary">GPA: {app.grade}</p>
+                          <p className="text-text-primary dark:text-neutral-200 font-bold">{app.university}</p>
+                          <p className="text-[9px] text-text-secondary">{app.yearInUniversity || '—'} &middot; GPA: {app.grade}</p>
                         </td>
                         <td className="px-4 py-3">
                           <select

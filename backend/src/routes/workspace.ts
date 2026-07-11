@@ -362,7 +362,7 @@ router.post('/internships/:id/apply', authGuard, upload.single('resume'), async 
   try {
     const user = req.user!;
     const { id } = req.params;
-    const { fullName, email, university, grade, portfolio } = req.body;
+    const { fullName, email, university, grade, yearInUniversity, portfolio } = req.body;
 
     const internship = await prisma.internship.findUnique({ where: { id } });
     if (!internship) {
@@ -402,6 +402,7 @@ router.post('/internships/:id/apply', authGuard, upload.single('resume'), async 
         email,
         university,
         grade,
+        yearInUniversity: yearInUniversity || '',
         resumeUrl,
         portfolio: portfolio || null,
       },
