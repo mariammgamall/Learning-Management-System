@@ -39,6 +39,7 @@ export default function StudentWorkspacePage() {
   const [appEmail, setAppEmail] = useState('');
   const [appUniversity, setAppUniversity] = useState('');
   const [appGrade, setAppGrade] = useState('');
+  const [appYear, setAppYear] = useState('');
   const [appResume, setAppResume] = useState<File | null>(null);
   const [appPortfolio, setAppPortfolio] = useState('');
 
@@ -210,6 +211,7 @@ export default function StudentWorkspacePage() {
       // Reset form fields
       setAppUniversity('');
       setAppGrade('');
+      setAppYear('');
       setAppResume(null);
       setAppPortfolio('');
     },
@@ -221,7 +223,7 @@ export default function StudentWorkspacePage() {
   const handleApplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!applyingInternship) return;
-    if (!appFullName.trim() || !appEmail.trim() || !appUniversity.trim() || !appGrade.trim()) {
+    if (!appFullName.trim() || !appEmail.trim() || !appUniversity.trim() || !appGrade.trim() || !appYear.trim()) {
       addToast(lang === 'en' ? 'Please fill out all required fields' : 'يرجى ملء جميع الحقول المطلوبة', 'error');
       return;
     }
@@ -235,6 +237,7 @@ export default function StudentWorkspacePage() {
     formData.append('email', appEmail);
     formData.append('university', appUniversity);
     formData.append('grade', appGrade);
+    formData.append('yearInUniversity', appYear);
     formData.append('resume', appResume);
     if (appPortfolio.trim()) {
       formData.append('portfolio', appPortfolio);
@@ -1189,7 +1192,7 @@ export default function StudentWorkspacePage() {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* University */}
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">University *</label>
                   <input
                     type="text"
@@ -1201,9 +1204,9 @@ export default function StudentWorkspacePage() {
                   />
                 </div>
 
-                {/* GPA / Grade */}
+                {/* GPA */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">GPA / Grade *</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">GPA *</label>
                   <input
                     type="text"
                     required
@@ -1212,6 +1215,25 @@ export default function StudentWorkspacePage() {
                     placeholder="e.g. 3.8 / 4.0"
                     className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
+                </div>
+
+                {/* Year in University */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Year in University *</label>
+                  <select
+                    required
+                    value={appYear}
+                    onChange={(e) => setAppYear(e.target.value)}
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                  >
+                    <option value="" className="text-text-primary bg-white dark:bg-neutral-850">Select year…</option>
+                    <option value="1st Year" className="text-text-primary bg-white dark:bg-neutral-850">1st Year</option>
+                    <option value="2nd Year" className="text-text-primary bg-white dark:bg-neutral-850">2nd Year</option>
+                    <option value="3rd Year" className="text-text-primary bg-white dark:bg-neutral-850">3rd Year</option>
+                    <option value="4th Year" className="text-text-primary bg-white dark:bg-neutral-850">4th Year</option>
+                    <option value="5th Year" className="text-text-primary bg-white dark:bg-neutral-850">5th Year</option>
+                    <option value="Graduate" className="text-text-primary bg-white dark:bg-neutral-850">Graduate</option>
+                  </select>
                 </div>
               </div>
 

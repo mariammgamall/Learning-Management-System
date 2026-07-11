@@ -53,6 +53,10 @@ export default function MailboxPage() {
   const [contactSearch, setContactSearch] = useState('');
   const [isSending, setIsSending] = useState(false);
 
+  // Reply to regular email state
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyEmailMessage, setReplyEmailMessage] = useState('');
+
   // Sync tab if search parameter changes
   useEffect(() => {
     if (paramView === 'support' && (user?.role === 'SUPPORT' || user?.role === 'ADMIN')) {
@@ -137,12 +141,7 @@ export default function MailboxPage() {
     },
   });
 
-  const handleSelectEmail = (email: any) => {
-    setSelectedEmail(email);
-    if (!email.isRead && email.receiverId === user?.id) {
-      markReadMutation.mutate(email.id);
-    }
-  };
+
 
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +183,47 @@ export default function MailboxPage() {
       addToast(err.response?.data?.message || 'Failed to send email', 'error');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  // Handle reply to regular email
+  const handleSendEmailReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyEmailMessage.trim() || !selectedEmail) return;
+    const replySubject = selectedEmail.subject?.startsWith('Re:')
+      ? selectedEmail.subject
+      : `Re: ${selectedEmail.subject}`;
+    const replyReceiverId =
+      selectedEmail.senderId === user?.id
+        ? selectedEmail.receiverId
+        : selectedEmail.senderId;
+    try {
+      setIsSending(true);
+      const formData = new FormData();
+      formData.append('receiverId', replyReceiverId);
+      formData.append('subject', replySubject);
+      formData.append('message', replyEmailMessage);
+      await api.post('/emails', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      addToast(lang === 'en' ? 'Reply sent!' : 'تم إرسال الرد!', 'success');
+      setReplyEmailMessage('');
+      setIsReplying(false);
+      queryClient.invalidateQueries({ queryKey: ['emails', 'sent'] });
+    } catch (err: any) {
+      addToast(err.response?.data?.message || 'Failed to send reply', 'error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Close reply panel when switching emails
+  const handleSelectEmail = (email: any) => {
+    setSelectedEmail(email);
+    setIsReplying(false);
+    setReplyEmailMessage('');
+    if (!email.isRead && email.receiverId === user?.id) {
+      markReadMutation.mutate(email.id);
     }
   };
 
@@ -542,6 +582,54 @@ export default function MailboxPage() {
                       </a>
                     </div>
                   )}
+
+                  {/* Reply Section */}
+                  <div className="border-t border-beige-100 dark:border-neutral-850 pt-3">
+                    {!isReplying ? (
+                      <button
+                        onClick={() => setIsReplying(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-beige-50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 text-text-primary dark:text-neutral-200 text-xs font-bold rounded-xl hover:bg-mint-50 hover:border-mint-200 hover:text-mint-600 dark:hover:bg-mint-950/20 dark:hover:text-mint-400 transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        {lang === 'en' ? 'Reply' : 'رد'}
+                      </button>
+                    ) : (
+                      <form onSubmit={handleSendEmailReply} className="space-y-3 animate-fade-in">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-text-secondary dark:text-neutral-400">
+                          <Send className="w-3 h-3" />
+                          {lang === 'en'
+                            ? `Replying to ${selectedEmail.senderId === user?.id ? selectedEmail.receiver?.name : selectedEmail.sender?.name}`
+                            : `الرد على ${selectedEmail.senderId === user?.id ? selectedEmail.receiver?.name : selectedEmail.sender?.name}`}
+                        </div>
+                        <textarea
+                          rows={3}
+                          autoFocus
+                          required
+                          value={replyEmailMessage}
+                          onChange={(e) => setReplyEmailMessage(e.target.value)}
+                          placeholder={lang === 'en' ? 'Write your reply...' : 'اكتب ردك هنا...'}
+                          className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setIsReplying(false); setReplyEmailMessage(''); }}
+                            className="px-4 py-2 text-xs font-bold border border-beige-200 dark:border-neutral-700 rounded-lg text-text-secondary dark:text-neutral-400 hover:bg-beige-50 dark:hover:bg-neutral-850"
+                          >
+                            {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSending}
+                            className="flex-1 py-2 bg-mint-500 hover:bg-mint-400 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5"
+                          >
+                            {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {lang === 'en' ? 'Send Reply' : 'إرسال الرد'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -558,7 +646,7 @@ export default function MailboxPage() {
 
       {/* COMPOSE NEW EMAIL MODAL WINDOW */}
       {isComposeOpen && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-800 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
@@ -585,7 +673,7 @@ export default function MailboxPage() {
                   placeholder={lang === 'en' ? 'Type recipient name/email to search...' : 'اكتب اسم أو بريد المستلم للبحث...'}
                   value={contactSearch}
                   onChange={(e) => setContactSearch(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
+                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
                 />
 
                 {/* Recipient list dropdown */}
@@ -635,7 +723,7 @@ export default function MailboxPage() {
                   required
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
+                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
                   placeholder={lang === 'en' ? 'Message subject...' : 'موضوع الرسالة...'}
                 />
               </div>
@@ -650,7 +738,7 @@ export default function MailboxPage() {
                   rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
+                  className="w-full px-3 py-2 text-xs border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
                   placeholder={lang === 'en' ? 'Write your message details here...' : 'اكتب تفاصيل رسالتك هنا...'}
                 />
               </div>
