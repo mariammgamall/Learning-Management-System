@@ -308,61 +308,63 @@ export default function DashboardLayout({
       <div className="flex-1 lg:ml-64 flex flex-col min-w-0 relative z-30">
         
         {/* Top Header */}
-        <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-beige-200">
+        <header className="sticky top-0 z-10 flex items-center justify-between min-h-[56px] h-14 px-3 md:px-8 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-beige-200 dark:border-neutral-800">
           
-          {/* Left: Mobile Sidebar Button */}
-          <div className="flex items-center gap-4">
+          {/* Left: Mobile Sidebar Button + Page Title */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100"
+              className="lg:hidden p-2 flex-shrink-0 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
             
             {/* Page Role Title */}
-            <div>
-              <span className="text-[10px] font-extrabold text-mint-500 tracking-widest block uppercase">
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] font-extrabold text-mint-500 tracking-widest block uppercase">
                 {user.role} workspace
               </span>
-              <h1 className="text-sm md:text-base font-bold text-text-primary">Welcome, {user.name}</h1>
+              <h1 className="text-xs sm:text-sm md:text-base font-bold text-text-primary dark:text-neutral-100 truncate max-w-[130px] xs:max-w-[160px] sm:max-w-xs md:max-w-none">
+                Welcome, {user.name}
+              </h1>
             </div>
           </div>
 
-          {/* Right: Notifications & Settings */}
-          <div className="flex items-center gap-3">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             
-            {/* Language Switcher Toggle Button */}
+            {/* Language Switcher — hidden on mobile, shown sm+ */}
             <button
               onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className="px-2.5 py-1.5 bg-beige-100 hover:bg-beige-200 text-text-secondary hover:text-text-primary rounded-xl transition-colors font-sans text-[10px] font-black tracking-wider uppercase border border-beige-200"
+              className="hidden sm:inline-flex px-2.5 py-1.5 bg-beige-100 hover:bg-beige-200 dark:bg-neutral-850 dark:hover:bg-neutral-800 text-text-secondary hover:text-text-primary rounded-xl transition-colors font-sans text-[10px] font-black tracking-wider uppercase border border-beige-200 dark:border-neutral-700"
               title="Toggle Language / تغيير اللغة"
             >
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
 
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle — hidden on mobile */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 transition-colors"
+              className="hidden sm:flex p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 dark:hover:bg-neutral-850 transition-colors"
               title="Toggle Dark Mode"
             >
               {darkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5" />}
             </button>
 
-            {/* Help Centre Support Button */}
+            {/* Help Centre Support Button — hidden on mobile */}
             <button
               onClick={() => setIsSupportOpen(true)}
-              className="p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 transition-colors"
+              className="hidden sm:flex p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 dark:hover:bg-neutral-850 transition-colors"
               title={lang === 'en' ? 'Help Centre Support' : 'مركز الدعم والمساعدة'}
             >
-              <HelpCircle className="w-5 h-5 text-mint-500 hover:scale-110 transition-transform" />
+              <HelpCircle className="w-5 h-5 text-mint-500" />
             </button>
             
-            {/* Notification Ring bell */}
+            {/* Notification Bell */}
             <div className="relative">
               <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 transition-colors"
+                className="relative p-2 text-text-secondary hover:text-text-primary rounded-xl hover:bg-beige-100 dark:hover:bg-neutral-850 transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -374,9 +376,9 @@ export default function DashboardLayout({
 
               {/* Notification Overlay Popover */}
               {notificationsOpen && (
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-premium border border-beige-200 py-3 z-50 animate-fade-in">
-                  <div className="flex items-center justify-between px-4 pb-2 border-b border-beige-100">
-                    <span className="text-xs font-bold text-text-primary">Notifications</span>
+                <div className="absolute right-0 mt-3 w-72 sm:w-80 bg-white dark:bg-neutral-900 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-800 py-3 z-50 animate-fade-in">
+                  <div className="flex items-center justify-between px-4 pb-2 border-b border-beige-100 dark:border-neutral-850">
+                    <span className="text-xs font-bold text-text-primary dark:text-neutral-100">Notifications</span>
                     {unreadCount > 0 && (
                       <button
                         onClick={() => markReadMutation.mutate()}
@@ -393,11 +395,11 @@ export default function DashboardLayout({
                       notifications.map((n: any) => (
                         <div
                           key={n.id}
-                          className={`px-4 py-3 text-xs leading-relaxed border-b border-beige-50 ${
-                            !n.isRead ? 'bg-mint-50/50 font-medium' : 'text-text-secondary'
+                          className={`px-4 py-3 text-xs leading-relaxed border-b border-beige-50 dark:border-neutral-850 ${
+                            !n.isRead ? 'bg-mint-50/50 dark:bg-mint-950/10 font-medium' : 'text-text-secondary'
                           }`}
                         >
-                          <p>{n.message}</p>
+                          <p className="text-text-primary dark:text-neutral-200">{n.message}</p>
                           <span className="text-[9px] text-text-secondary/60 block mt-1">
                             {new Date(n.createdAt).toLocaleDateString()}
                           </span>
@@ -409,10 +411,10 @@ export default function DashboardLayout({
               )}
             </div>
 
-            {/* Logout button (Mobile view helper) */}
+            {/* Logout button — mobile only */}
             <button
               onClick={handleLogout}
-              className="lg:hidden p-2 text-text-secondary hover:text-rose-500 rounded-xl hover:bg-beige-100 transition-colors"
+              className="lg:hidden p-2 text-text-secondary hover:text-rose-500 rounded-xl hover:bg-beige-100 dark:hover:bg-neutral-850 transition-colors"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -462,6 +464,29 @@ export default function DashboardLayout({
                 );
               })}
             </nav>
+            {/* Mobile Utility Actions */}
+            <div className="flex items-center gap-2 py-3 border-t border-beige-300">
+              <button
+                onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-beige-100 hover:bg-beige-300 text-text-secondary text-[10px] font-black rounded-lg border border-beige-300"
+              >
+                {lang === 'en' ? 'العربية' : 'English'}
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 bg-beige-100 hover:bg-beige-300 text-text-secondary rounded-lg border border-beige-300"
+                title="Toggle Dark Mode"
+              >
+                {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => { setMobileSidebarOpen(false); setIsSupportOpen(true); }}
+                className="p-2 bg-beige-100 hover:bg-beige-300 text-text-secondary rounded-lg border border-beige-300"
+                title="Help Centre"
+              >
+                <HelpCircle className="w-4 h-4 text-mint-500" />
+              </button>
+            </div>
             <div className="border-t border-beige-300 pt-4 flex items-center gap-3">
               {user.profilePhoto ? (
                 <img
