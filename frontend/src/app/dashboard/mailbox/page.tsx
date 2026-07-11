@@ -80,7 +80,7 @@ export default function MailboxPage() {
   });
 
   // Fetch detailed ticket conversations (if viewing a ticket)
-  const isSelectedTicket = selectedEmail && !!selectedEmail.ticketNumber;
+  const isSelectedTicket = !!selectedEmail && !!selectedEmail.ticketNumber;
   const { data: ticketDetails = null, isLoading: isLoadingTicketDetails } = useQuery({
     queryKey: ['mailbox-ticket-details', selectedEmail?.id],
     queryFn: async () => {

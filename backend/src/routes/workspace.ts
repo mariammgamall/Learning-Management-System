@@ -357,11 +357,12 @@ router.get('/internships', authGuard, async (req: AuthenticatedRequest, res: Res
 });
 
 // @route   POST /api/v1/workspace/internships/:id/apply
-// @desc    Apply for an internship opportunity
-router.post('/internships/:id/apply', authGuard, async (req: AuthenticatedRequest, res: Response) => {
+// @desc    Apply for an internship opportunity with student details & resume
+router.post('/internships/:id/apply', authGuard, upload.single('resume'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user!;
     const { id } = req.params;
+    const { fullName, email, university, grade, portfolio } = req.body;
 
     const internship = await prisma.internship.findUnique({ where: { id } });
     if (!internship) {
@@ -382,11 +383,27 @@ router.post('/internships/:id/apply', authGuard, async (req: AuthenticatedReques
       return res.status(400).json({ message: 'You have already applied for this internship opportunity' });
     }
 
+    if (!fullName || !email || !university || !grade) {
+      return res.status(400).json({ message: 'Full name, email, university, and grade are required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Resume/CV file is required' });
+    }
+
+    const resumeUrl = await uploadToCloudinaryOrLocal(req.file, 'resumes');
+
     const application = await prisma.internshipApplication.create({
       data: {
         internshipId: id,
         studentId: user.id,
         status: 'Applied',
+        fullName,
+        email,
+        university,
+        grade,
+        resumeUrl,
+        portfolio: portfolio || null,
       },
     });
 

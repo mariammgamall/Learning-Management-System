@@ -434,6 +434,14 @@ model InternshipApplication {
   student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   status       String     @default("Applied") // Applied, Under Review, Interview, Accepted, Rejected
   appliedAt    DateTime   @default(now())
+  
+  // Applicant Info
+  fullName     String     @default("")
+  email        String     @default("")
+  university   String     @default("")
+  grade        String     @default("")
+  resumeUrl    String     @default("")
+  portfolio    String?
 
   @@unique([internshipId, studentId])
 }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useToastStore } from '../../../../hooks/useToastStore';
+import { useAuthStore } from '../../../../hooks/useAuthStore';
 import { api } from '../../../../utils/api';
 import {
   Briefcase,
@@ -27,9 +28,27 @@ import {
 export default function StudentWorkspacePage() {
   const { lang } = useTranslation();
   const { addToast } = useToastStore();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
   const [activeSection, setActiveSection] = useState<'teams' | 'projects' | 'internships' | 'applications'>('teams');
+
+  // Internship application form state
+  const [applyingInternship, setApplyingInternship] = useState<any>(null);
+  const [appFullName, setAppFullName] = useState('');
+  const [appEmail, setAppEmail] = useState('');
+  const [appUniversity, setAppUniversity] = useState('');
+  const [appGrade, setAppGrade] = useState('');
+  const [appResume, setAppResume] = useState<File | null>(null);
+  const [appPortfolio, setAppPortfolio] = useState('');
+
+  // Prefill name and email when applying modal opens
+  React.useEffect(() => {
+    if (user && applyingInternship) {
+      setAppFullName(user.name || '');
+      setAppEmail(user.email || '');
+    }
+  }, [user, applyingInternship]);
 
   // Modals & form states
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
@@ -178,18 +197,51 @@ export default function StudentWorkspacePage() {
   });
 
   const applyInternshipMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.post(`/workspace/internships/${id}/apply`);
+    mutationFn: async ({ id, formData }: { id: string; formData: FormData }) => {
+      await api.post(`/workspace/internships/${id}/apply`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace-applications'] });
       addToast(lang === 'en' ? 'Application submitted successfully!' : 'تم تقديم الطلب بنجاح!', 'success');
+      setApplyingInternship(null);
       setSelectedInternship(null);
+      // Reset form fields
+      setAppUniversity('');
+      setAppGrade('');
+      setAppResume(null);
+      setAppPortfolio('');
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.message || 'Failed to apply', 'error');
+      addToast(err.response?.data?.message || 'Failed to submit application', 'error');
     },
   });
+
+  const handleApplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!applyingInternship) return;
+    if (!appFullName.trim() || !appEmail.trim() || !appUniversity.trim() || !appGrade.trim()) {
+      addToast(lang === 'en' ? 'Please fill out all required fields' : 'يرجى ملء جميع الحقول المطلوبة', 'error');
+      return;
+    }
+    if (!appResume) {
+      addToast(lang === 'en' ? 'Please upload your Resume/CV file' : 'يرجى تحميل ملف السيرة الذاتية', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('fullName', appFullName);
+    formData.append('email', appEmail);
+    formData.append('university', appUniversity);
+    formData.append('grade', appGrade);
+    formData.append('resume', appResume);
+    if (appPortfolio.trim()) {
+      formData.append('portfolio', appPortfolio);
+    }
+
+    applyInternshipMutation.mutate({ id: applyingInternship.id, formData });
+  };
 
   const handleCreateTeamSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -646,38 +698,38 @@ export default function StudentWorkspacePage() {
 
       {/* CREATE TEAM MODAL OVERLAY */}
       {isCreateTeamOpen && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-md bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 space-y-4 text-xs font-semibold animate-scale-up">
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
               <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
                 <Users className="w-4 h-4 text-mint-500" />
                 {lang === 'en' ? 'Create New Team' : 'تأسيس فريق تعاوني جديد'}
               </h3>
-              <button onClick={() => setIsCreateTeamOpen(false)} className="text-text-secondary hover:text-text-primary">
+              <button onClick={() => setIsCreateTeamOpen(false)} className="text-text-secondary hover:text-text-primary dark:text-neutral-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreateTeamSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold block">Team Name *</label>
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Team Name *</label>
                 <input
                   type="text"
                   required
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold block">Description *</label>
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Description *</label>
                 <textarea
                   required
                   rows={3}
                   value={teamDesc}
                   onChange={(e) => setTeamDesc(e.target.value)}
-                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg outline-none focus:ring-1 focus:ring-mint-500 bg-white text-text-primary dark:text-neutral-200"
                 />
               </div>
 
@@ -695,14 +747,14 @@ export default function StudentWorkspacePage() {
 
       {/* CREATE PROJECT MODAL OVERLAY */}
       {isCreateProjOpen && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
               <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
                 <FolderGit2 className="w-4 h-4 text-mint-500" />
                 {lang === 'en' ? 'Register New Project' : 'إضافة مشروع جديد للمعرض'}
               </h3>
-              <button onClick={() => setIsCreateProjOpen(false)} className="text-text-secondary hover:text-text-primary">
+              <button onClick={() => setIsCreateProjOpen(false)} className="text-text-secondary hover:text-text-primary dark:text-neutral-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -710,97 +762,97 @@ export default function StudentWorkspacePage() {
             <form onSubmit={handleCreateProjSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Project Name *</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Project Name *</label>
                   <input
                     type="text"
                     required
                     value={projName}
                     onChange={(e) => setProjName(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Category *</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Category *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. AI Application"
                     value={projCategory}
                     onChange={(e) => setProjCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold block">Project Description *</label>
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Project Description *</label>
                 <textarea
                   required
                   rows={2}
                   value={projDesc}
                   onChange={(e) => setProjDesc(e.target.value)}
-                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Technologies (comma separated) *</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Technologies (comma separated) *</label>
                   <input
                     type="text"
                     required
                     placeholder="Next.js, Python, FastAPI"
                     value={projTechs}
                     onChange={(e) => setProjTechs(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Key Features (comma separated)</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Key Features (comma separated)</label>
                   <input
                     type="text"
                     placeholder="Authentication, AI Summaries"
                     value={projFeatures}
                     onChange={(e) => setProjFeatures(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Status</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Status</label>
                   <select
                     value={projStatus}
                     onChange={(e) => setProjStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   >
-                    <option value="Planning">Planning</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
+                    <option value="Planning" className="text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850">Planning</option>
+                    <option value="In Progress" className="text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850">In Progress</option>
+                    <option value="Completed" className="text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850">Completed</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Progress (%)</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Progress (%)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={projProgress}
                     onChange={(e) => setProjProgress(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Link to Team (Optional)</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Link to Team (Optional)</label>
                   <select
                     value={projTeamId}
                     onChange={(e) => setProjTeamId(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   >
-                    <option value="">None</option>
+                    <option value="" className="text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850">None</option>
                     {activeTeams.map((t: any) => (
-                      <option key={t.team.id} value={t.team.id}>{t.team.name}</option>
+                      <option key={t.team.id} value={t.team.id} className="text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850">{t.team.name}</option>
                     ))}
                   </select>
                 </div>
@@ -808,73 +860,73 @@ export default function StudentWorkspacePage() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Live Demo URL</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Live Demo URL</label>
                   <input
                     type="url"
                     value={projDemo}
                     onChange={(e) => setProjDemo(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">GitHub URL</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">GitHub URL</label>
                   <input
                     type="url"
                     value={projGithub}
                     onChange={(e) => setProjGithub(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Docs URL</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Docs URL</label>
                   <input
                     type="url"
                     value={projDocs}
                     onChange={(e) => setProjDocs(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Project Logo File</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Project Logo File</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => setProjLogo(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200 cursor-pointer"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Submit Project Files / Code (Multiple)</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Submit Project Files / Code (Multiple)</label>
                   <input
                     type="file"
                     multiple
                     onChange={(e) => setProjFiles(e.target.files)}
-                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200 cursor-pointer"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Demo Video URL</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Demo Video URL</label>
                   <input
                     type="url"
                     placeholder="https://youtube.com/..."
                     value={projVideoUrl}
                     onChange={(e) => setProjVideoUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold block">Or Upload Demo Video File</label>
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Or Upload Demo Video File</label>
                   <input
                     type="file"
                     accept="video/*"
                     onChange={(e) => setProjVideoFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 file:text-text-primary hover:file:bg-beige-200 cursor-pointer"
+                    className="w-full text-xs text-text-secondary file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:bg-beige-100 dark:file:bg-neutral-800 file:text-text-primary dark:file:text-neutral-200 hover:file:bg-beige-200 cursor-pointer"
                   />
                 </div>
               </div>
@@ -893,7 +945,7 @@ export default function StudentWorkspacePage() {
 
       {/* PROJECT DETAILS VIEW MODAL */}
       {selectedProject && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
               <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
@@ -1023,14 +1075,14 @@ export default function StudentWorkspacePage() {
 
       {/* INTERNSHIP DETAILS MODAL */}
       {selectedInternship && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[5px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-beige-100 dark:border-neutral-850 pb-2">
               <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-mint-500" />
                 {selectedInternship.title}
               </h3>
-              <button onClick={() => setSelectedInternship(null)} className="text-text-secondary hover:text-text-primary">
+              <button onClick={() => setSelectedInternship(null)} className="text-text-secondary hover:text-text-primary dark:text-neutral-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1074,15 +1126,163 @@ export default function StudentWorkspacePage() {
                 </div>
               </div>
 
-              {/* Apply Button */}
+              {/* Apply Button → opens application form */}
               <button
-                onClick={() => applyInternshipMutation.mutate(selectedInternship.id)}
-                disabled={applyInternshipMutation.isPending}
+                onClick={() => setApplyingInternship(selectedInternship)}
                 className="w-full py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-1.5 transition-transform hover:scale-102 mt-4"
               >
-                {applyInternshipMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply for Internship Opportunity'}
+                <Send className="w-3.5 h-3.5" />
+                Apply for this Internship
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* INTERNSHIP APPLICATION FORM MODAL */}
+      {applyingInternship && (
+        <div className="fixed inset-0 z-[60] bg-neutral-900/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-lg bg-white dark:bg-neutral-900 p-6 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 space-y-4 text-xs font-semibold animate-scale-up max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-beige-100 dark:border-neutral-850 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-text-primary dark:text-neutral-100 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-mint-500" />
+                  Apply for Internship
+                </h3>
+                <p className="text-[10px] text-text-secondary mt-1">{applyingInternship.title} · {applyingInternship.companyName}</p>
+              </div>
+              <button
+                onClick={() => setApplyingInternship(null)}
+                className="text-text-secondary hover:text-text-primary dark:text-neutral-400 flex-shrink-0 mt-0.5"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleApplySubmit} className="space-y-4">
+              {/* Full Name */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={appFullName}
+                  onChange={(e) => setAppFullName(e.target.value)}
+                  placeholder="Your full name"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={appEmail}
+                  onChange={(e) => setAppEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* University */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">University *</label>
+                  <input
+                    type="text"
+                    required
+                    value={appUniversity}
+                    onChange={(e) => setAppUniversity(e.target.value)}
+                    placeholder="e.g. Cairo University"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                  />
+                </div>
+
+                {/* GPA / Grade */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">GPA / Grade *</label>
+                  <input
+                    type="text"
+                    required
+                    value={appGrade}
+                    onChange={(e) => setAppGrade(e.target.value)}
+                    placeholder="e.g. 3.8 / 4.0"
+                    className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                  />
+                </div>
+              </div>
+
+              {/* Resume / CV Upload */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">Resume / CV *</label>
+                <div className="border-2 border-dashed border-beige-200 dark:border-neutral-700 rounded-xl p-4 text-center">
+                  <input
+                    type="file"
+                    id="app-resume-upload"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => setAppResume(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="app-resume-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-mint-50 dark:bg-mint-950/20 flex items-center justify-center">
+                      <ArrowRight className="w-4 h-4 text-mint-500 rotate-90" />
+                    </div>
+                    {appResume ? (
+                      <span className="text-mint-600 dark:text-mint-400 font-bold">{appResume.name}</span>
+                    ) : (
+                      <span className="text-text-secondary dark:text-neutral-400 font-semibold">
+                        Click to upload PDF, DOC or DOCX
+                      </span>
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              {/* Portfolio (Optional) */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold block text-text-primary dark:text-neutral-300">
+                  Portfolio URL <span className="text-text-secondary font-normal">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={appPortfolio}
+                  onChange={(e) => setAppPortfolio(e.target.value)}
+                  placeholder="https://yourportfolio.com"
+                  className="w-full px-3 py-2 border border-beige-200 dark:border-neutral-700 dark:bg-neutral-850 rounded-lg bg-white text-text-primary dark:text-neutral-200 outline-none focus:ring-1 focus:ring-mint-500"
+                />
+              </div>
+
+              {/* Submit */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setApplyingInternship(null)}
+                  className="flex-1 py-2.5 border border-beige-200 dark:border-neutral-700 text-text-secondary dark:text-neutral-400 font-bold text-xs rounded-xl hover:bg-beige-50 dark:hover:bg-neutral-850"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={applyInternshipMutation.isPending}
+                  className="flex-1 py-2.5 bg-mint-500 hover:bg-mint-400 text-white font-bold text-xs rounded-xl shadow-soft flex items-center justify-center gap-1.5"
+                >
+                  {applyInternshipMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      Submit Application
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

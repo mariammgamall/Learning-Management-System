@@ -7,7 +7,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useToastStore } from '../../hooks/useToastStore';
-import { Loader2, BookOpen, Lock, Mail, User, GraduationCap, Sparkles, BrainCircuit, Compass, Briefcase } from 'lucide-react';
+import { Loader2, BookOpen, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 
 const registerSchema = z.object({
@@ -58,191 +58,116 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-tr from-beige-100 via-beige-50 to-mint-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950 text-xs font-semibold relative">
-      
-      {/* Left side: Register Form */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
-        <div className="w-full max-w-md p-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 animate-slide-up">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-tr from-beige-100 via-beige-50 to-mint-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950 relative text-xs font-semibold">
+      <div className="w-full max-w-md p-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-premium border border-beige-200 dark:border-neutral-850 animate-slide-up">
+        
+        {/* Brand Header */}
+        <div className="flex flex-col items-center gap-2 mb-6 text-center">
+          <div className="flex items-center justify-center w-14 h-14 bg-mint-400 text-white rounded-2xl shadow-soft">
+            <BookOpen className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-neutral-100">LMS</h1>
+          <p className="text-xs text-text-secondary dark:text-neutral-400">Create your portal workspace account</p>
+        </div>
+
+        {/* Form Container */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           
-          {/* Brand Header */}
-          <div className="flex flex-col items-center gap-2 mb-6 text-center">
-            <div className="flex items-center justify-center w-14 h-14 bg-mint-400 text-white rounded-2xl shadow-soft">
-              <BookOpen className="w-8 h-8" />
+          {/* Name input */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Full Name</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
+                <User className="w-4 h-4" />
+              </span>
+              <input
+                {...register('name')}
+                type="text"
+                placeholder="John Doe"
+                className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-250 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
+              />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-neutral-100">LMS</h1>
-            <p className="text-xs text-text-secondary dark:text-neutral-400">Create your portal workspace account</p>
+            {errors.name && (
+              <p className="text-xs font-semibold text-rose-500">{errors.name.message}</p>
+            )}
           </div>
 
-          {/* Form Container */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            
-            {/* Name input */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Full Name</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
-                  <User className="w-4 h-4" />
-                </span>
-                <input
-                  {...register('name')}
-                  type="text"
-                  placeholder="John Doe"
-                  className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-200 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
-                />
-              </div>
-              {errors.name && (
-                <p className="text-xs font-semibold text-rose-500">{errors.name.message}</p>
-              )}
+          {/* Email input */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Email Address</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
+                <Mail className="w-4 h-4" />
+              </span>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="you@lms.com"
+                className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-250 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
+              />
             </div>
+            {errors.email && (
+              <p className="text-xs font-semibold text-rose-500">{errors.email.message}</p>
+            )}
+          </div>
 
-            {/* Email input */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Email Address</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
-                  <Mail className="w-4 h-4" />
-                </span>
-                <input
-                  {...register('email')}
-                  type="email"
-                  placeholder="you@lms.com"
-                  className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-200 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-xs font-semibold text-rose-500">{errors.email.message}</p>
-              )}
+          {/* Password input */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Password</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
+                <Lock className="w-4 h-4" />
+              </span>
+              <input
+                {...register('password')}
+                type="password"
+                placeholder="••••••••"
+                className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-250 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
+              />
             </div>
+            {errors.password && (
+              <p className="text-xs font-semibold text-rose-500 max-w-xs">{errors.password.message}</p>
+            )}
+          </div>
 
-            {/* Password input */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
-                  <Lock className="w-4 h-4" />
-                </span>
-                <input
-                  {...register('password')}
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full py-2.5 pl-10 pr-4 text-xs font-semibold text-text-primary dark:text-neutral-250 bg-beige-50/50 dark:bg-neutral-850 border border-beige-200 dark:border-neutral-700 rounded-xl outline-none focus:border-mint-500 transition-all"
-                />
-              </div>
-              {errors.password && (
-                <p className="text-xs font-semibold text-rose-500 max-w-xs">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Role select */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Select Portal Role</label>
-              <select
-                {...register('role')}
-                className="w-full py-2.5 px-3 text-xs font-semibold text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850 border border-beige-200 dark:border-neutral-750 rounded-xl focus:border-mint-400 focus:outline-none"
-              >
-                <option value="STUDENT">Student (Course Catalog & Lectures Portal)</option>
-                <option value="DOCTOR">Doctor (Course Builder & Grading Dashboard)</option>
-                <option value="TA">Teaching Assistant (TA Portal)</option>
-              </select>
-              {errors.role && (
-                <p className="text-xs font-semibold text-rose-500">{errors.role.message}</p>
-              )}
-            </div>
-
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center justify-center w-full py-3 mt-2 text-xs font-bold text-white rounded-xl shadow-soft bg-mint-500 hover:bg-mint-400 active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none transition-colors"
+          {/* Role select */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-text-primary dark:text-neutral-300 block">Select Portal Role</label>
+            <select
+              {...register('role')}
+              className="w-full py-2.5 px-3 text-xs font-semibold text-text-primary dark:text-neutral-200 bg-white dark:bg-neutral-850 border border-beige-200 dark:border-neutral-750 rounded-xl focus:border-mint-400 focus:outline-none"
             >
-              {isSubmitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-xs font-semibold text-text-secondary">
-            Already registered?{' '}
-            <Link href="/login" className="text-mint-500 hover:underline">
-              Sign In Here
-            </Link>
+              <option value="STUDENT">Student (Course Catalog & Lectures Portal)</option>
+              <option value="DOCTOR">Doctor (Course Builder & Grading Dashboard)</option>
+              <option value="TA">Teaching Assistant (TA Portal)</option>
+            </select>
+            {errors.role && (
+              <p className="text-xs font-semibold text-rose-500">{errors.role.message}</p>
+            )}
           </div>
 
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center justify-center w-full py-3 mt-2 text-xs font-bold text-white rounded-xl shadow-soft bg-mint-500 hover:bg-mint-400 active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none transition-colors"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              'Create Account'
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-xs font-semibold text-text-secondary">
+          Already registered?{' '}
+          <Link href="/login" className="text-mint-500 hover:underline">
+            Sign In Here
+          </Link>
         </div>
+
       </div>
-
-      {/* Right side: Split screen Showcase */}
-      <div className="hidden md:flex flex-1 flex-col justify-center bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md border-l border-beige-200 dark:border-neutral-850 p-12 overflow-y-auto max-h-screen custom-scrollbar">
-        <div className="space-y-8 max-w-lg mx-auto">
-          {/* Showcase Header */}
-          <div className="space-y-3">
-            <span className="inline-block px-3 py-1 bg-mint-500/10 text-mint-600 dark:text-mint-400 text-[10px] font-black uppercase rounded-full tracking-wider">
-              LMS Innovation Hub
-            </span>
-            <h2 className="text-2xl font-black text-text-primary dark:text-neutral-100 leading-tight">
-              A Next-Generation Learning & Career Platform
-            </h2>
-            <p className="text-xs font-semibold text-text-secondary dark:text-neutral-400 leading-relaxed">
-              A modern educational ecosystem designed to connect students, instructors, and administrators through intelligent learning tools, collaboration features, and career development opportunities.
-            </p>
-          </div>
-
-          {/* Features grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Feature 1 */}
-            <div className="p-4 bg-white dark:bg-neutral-900/90 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-2">
-              <div className="p-2 bg-mint-50 dark:bg-mint-950/20 rounded-lg text-mint-500 w-fit">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-text-primary dark:text-neutral-100">
-                Smart Courses
-              </h4>
-              <p className="text-[10px] text-text-secondary dark:text-neutral-450 leading-relaxed font-semibold">
-                Interactive roadmaps, video portals, and assignments.
-              </p>
-            </div>
-            {/* Feature 2 */}
-            <div className="p-4 bg-white dark:bg-neutral-900/90 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-2">
-              <div className="p-2 bg-mint-50 dark:bg-mint-950/20 rounded-lg text-mint-500 w-fit">
-                <BrainCircuit className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-text-primary dark:text-neutral-100">
-                AI Study Copilot
-              </h4>
-              <p className="text-[10px] text-text-secondary dark:text-neutral-450 leading-relaxed font-semibold">
-                Get instant AI lecture summaries and recommendations.
-              </p>
-            </div>
-            {/* Feature 3 */}
-            <div className="p-4 bg-white dark:bg-neutral-900/90 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-2">
-              <div className="p-2 bg-mint-50 dark:bg-mint-950/20 rounded-lg text-mint-500 w-fit">
-                <Compass className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-text-primary dark:text-neutral-100">
-                Social Collaboration
-              </h4>
-              <p className="text-[10px] text-text-secondary dark:text-neutral-450 leading-relaxed font-semibold">
-                Social feed posts, bookmarking, and thread comments.
-              </p>
-            </div>
-            {/* Feature 4 */}
-            <div className="p-4 bg-white dark:bg-neutral-900/90 border border-beige-200 dark:border-neutral-800 rounded-2xl shadow-soft space-y-2">
-              <div className="p-2 bg-mint-50 dark:bg-mint-950/20 rounded-lg text-mint-500 w-fit">
-                <Briefcase className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-text-primary dark:text-neutral-150">
-                Workspace & Portfolios
-              </h4>
-              <p className="text-[10px] text-text-secondary dark:text-neutral-450 leading-relaxed font-semibold">
-                Build team projects, files submissions, and training paths.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

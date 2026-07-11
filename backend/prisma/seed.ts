@@ -88,7 +88,7 @@ async function main() {
     where: { email: 'support@lms.com' },
     update: { 
       password: passwordHash,
-      profilePhoto: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=200'
+      profilePhoto: null
     },
     create: {
       email: 'support@lms.com',
@@ -96,7 +96,7 @@ async function main() {
       password: passwordHash,
       role: Role.SUPPORT,
       isActive: true,
-      profilePhoto: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=200',
+      profilePhoto: null,
     },
   });
 
